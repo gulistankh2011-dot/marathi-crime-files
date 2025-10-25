@@ -26,6 +26,7 @@
   <!-- Admin Login -->
   <button id="loginBtn" class="btn">Login as Admin (Google)</button>
   <button id="logoutBtn" class="btn">Logout</button>
+  <p id="loginStatus"></p>
 
   <!-- Admin Panel -->
   <div id="adminPanel">
@@ -56,6 +57,7 @@
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import { getFirestore, collection, addDoc, serverTimestamp, getDocs, query, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+    import Quill from "https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js";
 
     // ===== Firebase Config =====
     const firebaseConfig = {
@@ -73,23 +75,20 @@
     const provider = new GoogleAuthProvider();
     const db = getFirestore(app);
     const storage = getStorage(app);
-
     const ADMIN_EMAIL = "gulistankh20141@gmail.com";
 
     // Quill Editor
-    import Quill from "https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js";
     const quill = new Quill('#editor', {
       theme: 'snow',
       modules: {
         toolbar: {
           container: "#toolbar",
-          handlers: {
-            image: imageHandler
-          }
+          handlers: { image: imageHandler }
         }
       }
     });
 
+    // Image Upload Handler
     function imageHandler() {
       const input = document.createElement('input');
       input.setAttribute('type','file');
@@ -118,20 +117,28 @@
       };
     }
 
-    // Login / Logout
+    // Login / Logout Buttons
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const adminPanel = document.getElementById('adminPanel');
+    const loginStatus = document.getElementById('loginStatus');
 
     loginBtn.addEventListener('click', ()=> signInWithPopup(auth, provider).catch(console.error));
     logoutBtn.addEventListener('click', ()=> signOut(auth));
 
+    // Auth State Change
     onAuthStateChanged(auth, user => {
-      if(user && user.email === ADMIN_EMAIL){
-        adminPanel.style.display = 'block';
+      if(user){
+        loginStatus.innerText = `Logged in as ${user.email}`;
+        if(user.email === ADMIN_EMAIL){
+          adminPanel.style.display = 'block';
+        } else {
+          adminPanel.style.display = 'none';
+        }
         loginBtn.style.display = 'none';
         logoutBtn.style.display = 'inline-block';
       } else {
+        loginStatus.innerText = 'Not logged in';
         adminPanel.style.display = 'none';
         loginBtn.style.display = 'inline-block';
         logoutBtn.style.display = 'none';
@@ -147,7 +154,7 @@
 
       document.getElementById('status').innerText = "Publishing...";
       try {
-        const docRef = await addDoc(collection(db, "crimes"), {
+        await addDoc(collection(db, "crimes"), {
           title, shortDesc, content: contentHtml, createdAt: serverTimestamp()
         });
         document.getElementById('status').innerText = "Published ✅";
