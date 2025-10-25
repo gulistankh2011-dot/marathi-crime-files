@@ -10,24 +10,26 @@
 
   <style>
     body { font-family: Arial,sans-serif; padding:16px; max-width:900px; margin:auto; }
+    header { text-align:center; margin-bottom:20px; }
     .input { width:100%; padding:8px; margin:6px 0; }
-    #editor { height:300px; background:white; margin-bottom:10px; }
+    #editor { height:250px; background:white; margin-bottom:10px; }
     .btn { padding:8px 14px; margin-top:10px; cursor:pointer; }
     .card { border-bottom:1px solid #ddd; padding:12px 0; display:flex; gap:12px; align-items:center; }
     .thumb { width:120px; height:80px; object-fit:cover; background:#f0f0f0; }
     a { text-decoration:none; color:inherit; }
     #adminPanel { border:1px solid #ccc; padding:10px; margin-bottom:20px; display:none; }
     #logoutBtn { display:none; margin-left:10px; }
-    #status { font-weight:bold; }
+    #status { font-weight:bold; margin-top:5px; }
   </style>
 </head>
 <body>
-  <h1>Marathi Crime Files</h1>
 
-  <!-- Admin Login -->
-  <button id="loginBtn" class="btn">Login as Admin (Google)</button>
-  <button id="logoutBtn" class="btn">Logout</button>
-  <p id="loginStatus">Not logged in</p>
+  <header>
+    <h1>Marathi Crime Files</h1>
+    <button id="loginBtn" class="btn">Login as Admin (Google)</button>
+    <button id="logoutBtn" class="btn">Logout</button>
+    <p id="loginStatus">Not logged in</p>
+  </header>
 
   <!-- Admin Panel -->
   <div id="adminPanel">
@@ -77,7 +79,6 @@
     const db = getFirestore(app);
     const storage = getStorage(app);
 
-    // Multiple admins support
     const ADMINS = ["gulistankh20141@gmail.com"];
 
     // Quill Editor
@@ -91,13 +92,11 @@
       }
     });
 
-    // Image upload handler
     function imageHandler() {
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
       input.click();
-
       input.onchange = async () => {
         const file = input.files[0];
         if(!file) return;
@@ -110,8 +109,8 @@
         const uploadTask = uploadBytesResumable(storageRef, file);
 
         uploadTask.on('state_changed', null,
-          (err) => { alert("Upload failed: " + err.message); },
-          async () => {
+          err => alert("Upload failed: "+err.message),
+          async ()=> {
             const url = await getDownloadURL(uploadTask.snapshot.ref);
             quill.deleteText(range.index,1);
             quill.insertEmbed(range.index,'image',url);
@@ -120,18 +119,15 @@
       };
     }
 
-    // DOM elements
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const adminPanel = document.getElementById('adminPanel');
     const loginStatus = document.getElementById('loginStatus');
     const statusEl = document.getElementById('status');
 
-    // Login / Logout
     loginBtn.addEventListener('click', ()=> signInWithPopup(auth, provider).catch(console.error));
     logoutBtn.addEventListener('click', ()=> signOut(auth));
 
-    // Auth state change
     onAuthStateChanged(auth, user => {
       if(user){
         loginStatus.innerText = `Logged in as ${user.email}`;
@@ -150,7 +146,6 @@
       }
     });
 
-    // Publish post
     document.getElementById('publishBtn').addEventListener('click', async ()=>{
       const title = document.getElementById('title').value.trim();
       const shortDesc = document.getElementById('shortDesc').value.trim();
@@ -161,7 +156,7 @@
       statusEl.style.color = "blue";
 
       try {
-        await addDoc(collection(db, "crimes"), {
+        await addDoc(collection(db,"crimes"), {
           title, shortDesc, content: contentHtml, createdAt: serverTimestamp()
         });
         statusEl.innerText = "Published ✅";
@@ -171,13 +166,11 @@
         quill.setContents([]);
         loadPosts();
       } catch(err){
-        console.error(err);
         statusEl.innerText = "Error: "+err.message;
         statusEl.style.color = "red";
       }
     });
 
-    // Load posts
     const postsEl = document.getElementById('posts');
     async function loadPosts(){
       postsEl.innerHTML = '';
@@ -199,18 +192,16 @@
             <button class="readBtn">Read More</button>
           </div>
         `;
-        const readBtn = card.querySelector('.readBtn');
-        readBtn.addEventListener('click', ()=> showPost(doc.id));
+        card.querySelector('.readBtn').addEventListener('click', ()=> showPost(doc.id));
         postsEl.appendChild(card);
       });
     }
 
     loadPosts();
 
-    // Show full post
     async function showPost(id){
       const d = await getDoc(doc(db,"crimes",id));
-      if(!d.exists()) { alert("Post not found"); return; }
+      if(!d.exists()){ alert("Post not found"); return; }
       const data = d.data();
       postsEl.innerHTML = `
         <button id="backBtn" class="btn">← Back</button>
@@ -223,7 +214,6 @@
 
   </script>
 
-  <!-- Quill JS -->
   <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 </body>
 </html>
