@@ -18,6 +18,7 @@
     a { text-decoration:none; color:inherit; }
     #adminPanel { border:1px solid #ccc; padding:10px; margin-bottom:20px; display:none; }
     #logoutBtn { display:none; margin-left:10px; }
+    #status { font-weight:bold; }
   </style>
 </head>
 <body>
@@ -26,7 +27,7 @@
   <!-- Admin Login -->
   <button id="loginBtn" class="btn">Login as Admin (Google)</button>
   <button id="logoutBtn" class="btn">Logout</button>
-  <p id="loginStatus"></p>
+  <p id="loginStatus">Not logged in</p>
 
   <!-- Admin Panel -->
   <div id="adminPanel">
@@ -75,7 +76,9 @@
     const provider = new GoogleAuthProvider();
     const db = getFirestore(app);
     const storage = getStorage(app);
-    const ADMIN_EMAIL = "gulistankh20141@gmail.com";
+
+    // Multiple admins support
+    const ADMINS = ["gulistankh20141@gmail.com"];
 
     // Quill Editor
     const quill = new Quill('#editor', {
@@ -88,11 +91,11 @@
       }
     });
 
-    // Image Upload Handler
+    // Image upload handler
     function imageHandler() {
       const input = document.createElement('input');
-      input.setAttribute('type','file');
-      input.setAttribute('accept','image/*');
+      input.type = 'file';
+      input.accept = 'image/*';
       input.click();
 
       input.onchange = async () => {
@@ -107,8 +110,8 @@
         const uploadTask = uploadBytesResumable(storageRef, file);
 
         uploadTask.on('state_changed', null,
-          (err)=> { alert("Upload failed: "+err.message); },
-          async ()=> {
+          (err) => { alert("Upload failed: " + err.message); },
+          async () => {
             const url = await getDownloadURL(uploadTask.snapshot.ref);
             quill.deleteText(range.index,1);
             quill.insertEmbed(range.index,'image',url);
@@ -117,20 +120,22 @@
       };
     }
 
-    // Login / Logout Buttons
+    // DOM elements
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const adminPanel = document.getElementById('adminPanel');
     const loginStatus = document.getElementById('loginStatus');
+    const statusEl = document.getElementById('status');
 
+    // Login / Logout
     loginBtn.addEventListener('click', ()=> signInWithPopup(auth, provider).catch(console.error));
     logoutBtn.addEventListener('click', ()=> signOut(auth));
 
-    // Auth State Change
+    // Auth state change
     onAuthStateChanged(auth, user => {
       if(user){
         loginStatus.innerText = `Logged in as ${user.email}`;
-        if(user.email === ADMIN_EMAIL){
+        if(ADMINS.includes(user.email)){
           adminPanel.style.display = 'block';
         } else {
           adminPanel.style.display = 'none';
@@ -145,30 +150,34 @@
       }
     });
 
-    // Publish Post
+    // Publish post
     document.getElementById('publishBtn').addEventListener('click', async ()=>{
       const title = document.getElementById('title').value.trim();
       const shortDesc = document.getElementById('shortDesc').value.trim();
       const contentHtml = quill.root.innerHTML;
       if(!title) return alert('Title भरें');
 
-      document.getElementById('status').innerText = "Publishing...";
+      statusEl.innerText = "Publishing...";
+      statusEl.style.color = "blue";
+
       try {
         await addDoc(collection(db, "crimes"), {
           title, shortDesc, content: contentHtml, createdAt: serverTimestamp()
         });
-        document.getElementById('status').innerText = "Published ✅";
+        statusEl.innerText = "Published ✅";
+        statusEl.style.color = "green";
         document.getElementById('title').value = '';
         document.getElementById('shortDesc').value = '';
         quill.setContents([]);
         loadPosts();
       } catch(err){
         console.error(err);
-        alert("Error: "+err.message);
+        statusEl.innerText = "Error: "+err.message;
+        statusEl.style.color = "red";
       }
     });
 
-    // Load Posts for Visitors
+    // Load posts
     const postsEl = document.getElementById('posts');
     async function loadPosts(){
       postsEl.innerHTML = '';
@@ -177,8 +186,8 @@
       snap.forEach(doc=>{
         const data = doc.data();
         let thumb = '';
-        const imgMatch = (data.content||'').match(/<img.*?src=["'](.*?)["']/);
-        if(imgMatch) thumb = imgMatch[1];
+        const imgMatch = [...(data.content||'').matchAll(/<img.*?src=["'](.*?)["']/g)];
+        if(imgMatch.length) thumb = imgMatch[0][1];
 
         const card = document.createElement('div');
         card.className = 'card';
@@ -187,9 +196,11 @@
           <div>
             <h3>${data.title||'Untitled'}</h3>
             <p>${data.shortDesc||''}</p>
-            <button onclick="showPost('${doc.id}')">Read More</button>
+            <button class="readBtn">Read More</button>
           </div>
         `;
+        const readBtn = card.querySelector('.readBtn');
+        readBtn.addEventListener('click', ()=> showPost(doc.id));
         postsEl.appendChild(card);
       });
     }
@@ -197,17 +208,19 @@
     loadPosts();
 
     // Show full post
-    window.showPost = async (id)=>{
+    async function showPost(id){
       const d = await getDoc(doc(db,"crimes",id));
       if(!d.exists()) { alert("Post not found"); return; }
       const data = d.data();
       postsEl.innerHTML = `
-        <button onclick="loadPosts()">← Back</button>
+        <button id="backBtn" class="btn">← Back</button>
         <h2>${data.title}</h2>
         <p><em>${data.shortDesc||''}</em></p>
         <div>${data.content}</div>
       `;
+      document.getElementById('backBtn').addEventListener('click', loadPosts);
     }
+
   </script>
 
   <!-- Quill JS -->
