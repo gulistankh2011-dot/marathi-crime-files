@@ -29,7 +29,7 @@
     #logoutBtn { background: #dc3545; }
     main {
       padding: 20px;
-      max-width: 800px;
+      max-width: 900px;
       margin: auto;
     }
     #adminSection {
@@ -59,13 +59,48 @@
       background: white;
       margin-bottom: 15px;
       border-radius: 10px;
-      padding: 15px;
+      padding: 10px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: 0.3s;
     }
+    .news-card:hover { transform: scale(1.02); }
     .news-card img {
       width: 100%;
+      height: 200px;
+      object-fit: cover;
       border-radius: 10px;
-      margin-top: 10px;
+    }
+    #newsModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+    }
+    #newsContent {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    #closeModal {
+      background: red;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      float: right;
+    }
+    .news-full img {
+      width: 100%;
+      margin: 10px 0;
+      border-radius: 10px;
     }
   </style>
 </head>
@@ -82,15 +117,24 @@
       <h2>🧑‍💼 Admin News Upload</h2>
       <form id="newsForm">
         <input type="text" id="title" placeholder="News Title" required />
-        <textarea id="content" rows="4" placeholder="News Content" required></textarea>
-        <input type="file" id="imageFile" accept="image/*" />
+        <textarea id="content" rows="5" placeholder="News Content (आप यहाँ text लिखें, image नीचे select करें)" required></textarea>
+        <label>एक से अधिक Images चुनें:</label>
+        <input type="file" id="imageFiles" accept="image/*" multiple />
         <button type="submit">Upload News</button>
       </form>
     </div>
 
-    <!-- 📰 News Feed -->
+    <!-- 📰 News Cards -->
     <div id="newsContainer"></div>
   </main>
+
+  <!-- Full News Modal -->
+  <div id="newsModal">
+    <div id="newsContent">
+      <button id="closeModal">X बंद करें</button>
+      <div id="fullNews"></div>
+    </div>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -119,31 +163,23 @@
     const adminSection = document.getElementById("adminSection");
     const newsForm = document.getElementById("newsForm");
     const newsContainer = document.getElementById("newsContainer");
+    const newsModal = document.getElementById("newsModal");
+    const fullNews = document.getElementById("fullNews");
+    const closeModal = document.getElementById("closeModal");
 
-    const ADMIN_EMAIL = "gulistankh2011@gmail.com"; // ⚠️ यहाँ अपना Gmail डालें
+    const ADMIN_EMAIL = "aapkaemail@gmail.com"; // ⚠️ यहाँ अपना Gmail डालें
 
-    // 🔹 Login
-    loginBtn.addEventListener("click", async () => {
-      await signInWithPopup(auth, provider);
-    });
+    // 🔹 Login / Logout
+    loginBtn.addEventListener("click", async () => { await signInWithPopup(auth, provider); });
+    logoutBtn.addEventListener("click", async () => { await signOut(auth); });
 
-    // 🔹 Logout
-    logoutBtn.addEventListener("click", async () => {
-      await signOut(auth);
-    });
-
-    // 🔹 Auth state listener
+    // 🔹 Auth listener
     onAuthStateChanged(auth, (user) => {
       if (user) {
         loginBtn.style.display = "none";
         logoutBtn.style.display = "inline-block";
-
-        if (user.email === ADMIN_EMAIL) {
-          adminSection.style.display = "block";
-        } else {
-          adminSection.style.display = "none";
-          alert("आप admin नहीं हैं।");
-        }
+        if (user.email === ADMIN_EMAIL) adminSection.style.display = "block";
+        else adminSection.style.display = "none";
       } else {
         loginBtn.style.display = "inline-block";
         logoutBtn.style.display = "none";
@@ -151,24 +187,25 @@
       }
     });
 
-    // 🔹 News Upload
+    // 🔹 Upload News with Multiple Images
     newsForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const title = document.getElementById("title").value;
       const content = document.getElementById("content").value;
-      const imageFile = document.getElementById("imageFile").files[0];
-      let imageUrl = "";
+      const imageFiles = document.getElementById("imageFiles").files;
+      const imageUrls = [];
 
-      if (imageFile) {
-        const storageRef = ref(storage, "newsImages/" + Date.now() + "_" + imageFile.name);
-        await uploadBytes(storageRef, imageFile);
-        imageUrl = await getDownloadURL(storageRef);
+      for (const file of imageFiles) {
+        const storageRef = ref(storage, "newsImages/" + Date.now() + "_" + file.name);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        imageUrls.push(url);
       }
 
       await addDoc(collection(db, "news"), {
         title,
         content,
-        imageUrl,
+        imageUrls,
         timestamp: new Date()
       });
 
@@ -177,9 +214,8 @@
       loadNews();
     });
 
-    // 🔹 Load News
+    // 🔹 Load all news (Card View)
     async function loadNews() {
-      newsContainer.innerHTML = "<p>Loading news...</p>";
       const q = query(collection(db, "news"), orderBy("timestamp", "desc"));
       const snap = await getDocs(q);
       newsContainer.innerHTML = "";
@@ -189,13 +225,24 @@
         const div = document.createElement("div");
         div.className = "news-card";
         div.innerHTML = `
+          ${news.imageUrls && news.imageUrls[0] ? `<img src="${news.imageUrls[0]}" />` : ""}
           <h3>${news.title}</h3>
-          <p>${news.content}</p>
-          ${news.imageUrl ? `<img src="${news.imageUrl}" alt="news image" />` : ""}
         `;
+        div.addEventListener("click", () => openNews(news));
         newsContainer.appendChild(div);
       });
     }
+
+    function openNews(news) {
+      newsModal.style.display = "flex";
+      fullNews.innerHTML = `
+        <h2>${news.title}</h2>
+        <p>${news.content}</p>
+        ${news.imageUrls ? news.imageUrls.map(url => `<img src="${url}" />`).join("") : ""}
+      `;
+    }
+
+    closeModal.addEventListener("click", () => newsModal.style.display = "none");
 
     loadNews();
   </script>
