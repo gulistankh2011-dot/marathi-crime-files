@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="hi">
 <head>
@@ -150,8 +149,8 @@ onSnapshot(noticeRef,snap=>{
 });
 
 // Show full news modal + admin edit/delete
-modalClose.onclick=()=>modalBg.style.display="none";
-modalBg.onclick=e=>{if(e.target===modalBg) modalBg.style.display="none";}
+modalClose?.addEventListener('click',()=>modalBg.style.display="none");
+modalBg?.addEventListener('click', e=>{if(e.target===modalBg) modalBg.style.display="none";})
 function showModal(d){
   modalContent.innerHTML=`<h2 class='text-lg font-bold mb-2'>${d.title}</h2>`;
   d.blocks.forEach(b=>{
@@ -223,14 +222,7 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 
 <header>
   <div class="flex items-center">
-
-
-
-    
-   
-<img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo">
-
-    
+    <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo">
     <h1 class="font-bold text-xl">Marathi Crime Files</h1>
   </div>
   <div class="header-buttons">
@@ -241,6 +233,8 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 
 <div class="notice-ticker"><span class="ticker-text" id="noticeText"></span></div>
 <div class="headline-ticker"><span class="ticker-text" id="headlineText"></span></div>
+
+<section id="postsArea" class="posts-grid"></section>
 
 <section id="noticeEditor" class="editor hidden">
   <h2>📰 Admin Notice</h2>
@@ -258,17 +252,17 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
   <button id="publishBtn">Publish</button>
 </section>
 
-<section class="posts-grid" id="postsArea"></section>
-
-<div id="modalBg" class="modal-bg">
-  <div class="modal">
-    <button id="modalClose" class="modal-close">X</button>
-    <div id="modalContent"></div>
-  </div>
+<!-- Zoom modal -->
+<div id="zoomModal" class="zoom-modal" aria-hidden="true">
+  <button class="zoom-close" aria-label="Close zoom">X</button>
+  <img id="zoomImg" alt="Zoomed image">
 </div>
 
-<div id="zoomModal" class="zoom-modal">
-  <button class="zoom-close">X</button>
-  <img id="zoomImg">
-</div>
+<!-- Bottom bar -->
+<footer class="bottom-bar" role="contentinfo" aria-label="Bottom navigation">
+  <button onclick="location.href='#about'">About</button>
+  <button onclick="location.href='#contact'">Contact</button>
+  <button onclick="location.href='#privacy'">Privacy</button>
+</footer>
+
 </html>
