@@ -45,6 +45,8 @@ const zoomModal=document.getElementById("zoomModal");
 const zoomImg=document.getElementById("zoomImg");
 
 let editingId=null;
+let currentPosts=[];
+let currentIndex=0;
 
 // Auth
 loginBtn.onclick = async()=>{await signInWithPopup(auth,new GoogleAuthProvider());}
@@ -115,22 +117,33 @@ document.getElementById("publishBtn").onclick=async()=>{
 const noticeRef=doc(db,"settings","notice");
 document.getElementById("saveNoticeBtn").onclick=()=>setDoc(noticeRef,{text:document.getElementById("noticeInput").value.trim()});
 
-// Load news & notice
+// Load posts
 onSnapshot(query(collection(db,"news"),orderBy("time","desc")),snap=>{
-  const posts=snap.docs.map(d=>({id:d.id,...d.data()}));
+  currentPosts = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderPosts();
+});
+
+function renderPosts(){
   postsArea.innerHTML="";
-  posts.forEach(d=>{
+  const user = auth.currentUser;
+  let postsToShow = [...currentPosts];
+  if(user && user.email===ADMIN_EMAIL){
+    // Admin posts on top
+    postsToShow = [...currentPosts].sort((a,b)=>b.time - a.time);
+  }
+  postsToShow.forEach((d,i)=>{
     const firstImg=d.blocks.find(b=>b.type=="image")?.url||"https://via.placeholder.com/300x200?text=No+Image";
     const firstText=d.blocks.find(b=>b.type=="text")?.text.substring(0,80)+"..."||"";
     const card=document.createElement("div");
     card.className="card";
     card.innerHTML=`<img src='${firstImg}' class='image-zoom'><div class='card-body'><h3>${d.title}</h3><p>${firstText}</p></div>`;
-    card.onclick=()=>showModal(d);
+    card.onclick=()=>showModal(i);
     postsArea.appendChild(card);
   });
-  headlineText.textContent=posts.slice(0,5).map(p=>p.title).join(" — ");
-});
+  headlineText.textContent=currentPosts.slice(0,5).map(p=>p.title).join(" — ");
+}
 
+// Notice
 onSnapshot(noticeRef,snap=>{
   noticeText.textContent=snap.exists()?snap.data().text:"";
   const user=auth.currentUser;
@@ -148,46 +161,79 @@ onSnapshot(noticeRef,snap=>{
   }
 });
 
-// Show full news modal + admin edit/delete
+// Show modal
 modalClose?.addEventListener('click',()=>modalBg.style.display="none");
 modalBg?.addEventListener('click', e=>{if(e.target===modalBg) modalBg.style.display="none";})
-function showModal(d){
+
+function showModal(index){
+  const d = currentPosts[index];
+  currentIndex = index;
   modalContent.innerHTML=`<h2 class='text-lg font-bold mb-2'>${d.title}</h2>`;
   d.blocks.forEach(b=>{
-    if(b.type=="text") modalContent.innerHTML+=`<p class='mb-2 text-gray-800'>${b.text}</p>`;
+    if(b.type==="text") modalContent.innerHTML+=`<p class='mb-2 text-gray-800'>${b.text}</p>`;
     else modalContent.innerHTML+=`<img src='${b.url}' class='image-zoom mb-2'>`;
   });
-  const user=auth.currentUser;
-  if(user && user.email===ADMIN_EMAIL){
-    const editBtn=document.createElement("button");
-    editBtn.textContent="Edit";
-    editBtn.className="bg-gray-200 px-3 py-1 rounded mr-2";
-    editBtn.onclick=()=>{
-      editingId=d.id; aTitle.value=d.title; aCat.value=d.category; blocksList.innerHTML="";
+
+  const user = auth.currentUser;
+  if(user && user.email === ADMIN_EMAIL){
+    const adminDiv = document.createElement("div");
+    adminDiv.style.position="absolute";
+    adminDiv.style.top="8px";
+    adminDiv.style.right="8px";
+    adminDiv.style.display="flex";
+    adminDiv.style.gap="6px";
+    adminDiv.style.zIndex="30";
+
+    const editBtn = document.createElement("button");
+    editBtn.innerHTML="✏️ Edit";
+    editBtn.onclick = (e)=>{
+      e.stopPropagation();
+      editingId = d.id;
+      aTitle.value = d.title;
+      aCat.value = d.category;
+      blocksList.innerHTML="";
       d.blocks.forEach(b=>{
-        if(b.type=="text"){
-          const t=document.createElement("textarea");
-          t.value=b.text; t.dataset.type="text"; t.className="border p-2 w-full mb-2 rounded";
+        if(b.type==="text"){
+          const t = document.createElement("textarea");
+          t.value = b.text;
+          t.dataset.type="text";
+          t.className="border p-2 w-full mb-2 rounded";
           blocksList.appendChild(t);
-        } else{
-          const inp=document.createElement("input"); inp.type="file"; inp.className="w-full mb-2"; blocksList.appendChild(inp);
+        } else {
+          const inp = document.createElement("input");
+          inp.type="file";
+          inp.className="w-full mb-2";
+          blocksList.appendChild(inp);
         }
       });
       modalBg.style.display="none";
     };
-    const delBtn=document.createElement("button");
-    delBtn.textContent="Delete";
-    delBtn.className="bg-red-500 text-white px-3 py-1 rounded";
-    delBtn.onclick=async()=>{if(confirm("Delete this post?")) await deleteDoc(doc(db,"news",d.id)); modalBg.style.display="none";}
-    modalContent.appendChild(editBtn); modalContent.appendChild(delBtn);
+
+    const delBtn = document.createElement("button");
+    delBtn.innerHTML="🗑️ Delete";
+    delBtn.style.background="linear-gradient(45deg,#ef4444,#b91c1c)";
+    delBtn.onclick=async(e)=>{
+      e.stopPropagation();
+      if(confirm("Delete this post?")){
+        await deleteDoc(doc(db,"news",d.id));
+        modalBg.style.display="none";
+      }
+    };
+
+    adminDiv.appendChild(editBtn);
+    adminDiv.appendChild(delBtn);
+    modalContent.appendChild(adminDiv);
   }
+
   modalBg.style.display="flex";
-  modalContent.querySelectorAll("img.image-zoom").forEach(img=>{img.onclick=()=>{zoomImg.src=img.src; zoomModal.style.display="flex";}});
+
+  modalContent.querySelectorAll("img.image-zoom").forEach(img=>{
+    img.onclick=()=>{zoomImg.src=img.src; zoomModal.style.display="flex";}
+  });
 }
 
 document.querySelector(".zoom-close").onclick=()=>zoomModal.style.display="none";
 zoomModal.onclick=e=>{if(e.target===zoomModal) zoomModal.style.display="none";}
-
 </script>
 
 <style>
@@ -218,60 +264,7 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 .zoom-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);justify-content:center;align-items:center;z-index:9999;}
 .zoom-modal img{max-width:90%;max-height:90%;border-radius:10px;box-shadow:0 0 25px rgba(255,255,255,0.3);}
 .zoom-close{position:absolute;top:20px;right:30px;background:#fff;border:none;border-radius:50%;font-size:20px;padding:5px 10px;cursor:pointer;}
-</style>
-
-<header>
-  <div class="flex items-center">
-    <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo">
-    <h1 class="font-bold text-xl">Marathi Crime Files</h1>
-  </div>
-  <div class="header-buttons">
-    <button id="loginBtn" class="bg-green-500 text-white">Login</button>
-    <button id="logoutBtn" class="hidden bg-red-600 text-white">Logout</button>
-  </div>
-</header>
-
-<div class="notice-ticker"><span class="ticker-text" id="noticeText"></span></div>
-<div class="headline-ticker"><span class="ticker-text" id="headlineText"></span></div>
-
-<section id="postsArea" class="posts-grid"></section>
-
-<section id="noticeEditor" class="editor hidden">
-  <h2>📰 Admin Notice</h2>
-  <input id="noticeInput" placeholder="Enter notice text...">
-  <button id="saveNoticeBtn">Save</button>
-</section>
-
-<section id="editorArea" class="editor hidden">
-  <h2>🖋️ Admin: Create/Edit News</h2>
-  <input id="aTitle" placeholder="Title">
-  <input id="aCat" placeholder="Category">
-  <div id="blocksList"></div>
-  <button id="addTextBtn">Add Text</button>
-  <button id="addImageBtn">Add Image</button>
-  <button id="publishBtn">Publish</button>
-</section>
-
-<!-- Zoom modal -->
-<div id="zoomModal" class="zoom-modal" aria-hidden="true">
-  <button class="zoom-close" aria-label="Close zoom">X</button>
-  <img id="zoomImg" alt="Zoomed image">
-</div>
-
-<!-- Bottom bar -->
-<footer class="bottom-bar" role="contentinfo" aria-label="Bottom navigation">
-  <button onclick="location.href='#about'">
-    <span>🛈</span> About
-  </button>
-  <button onclick="location.href='#contact'">
-    <span>✉️</span> Contact
-  </button>
-  <button onclick="location.href='#privacy'">
-    <span>🔒</span> Privacy
-  </button>
-</footer>
-
-<style>
+/* Bottom bar */
 .bottom-bar {
   position: fixed;
   bottom: 0;
@@ -320,7 +313,60 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
   .bottom-bar button { font-size: 12px; padding: 4px 0; }
 }
 </style>
+</head>
+<body>
 
+<header>
+  <div class="flex items-center">
+    <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo">
+    <h1 class="font-bold text-xl">Marathi Crime Files</h1>
+  </div>
+  <div class="header-buttons">
+    <button id="loginBtn" class="bg-green-500 text-white">Login</button>
+    <button id="logoutBtn" class="hidden bg-red-600 text-white">Logout</button>
+  </div>
+</header>
 
+<div class="notice-ticker"><span class="ticker-text" id="noticeText"></span></div>
+<div class="headline-ticker"><span class="ticker-text" id="headlineText"></span></div>
 
+<section id="postsArea" class="posts-grid"></section>
+
+<section id="noticeEditor" class="editor hidden">
+  <h2>📰 Admin Notice</h2>
+  <input id="noticeInput" placeholder="Enter notice text...">
+  <button id="saveNoticeBtn">Save</button>
+</section>
+
+<section id="editorArea" class="editor hidden">
+  <h2>🖋️ Admin: Create/Edit News</h2>
+  <input id="aTitle" placeholder="Title">
+  <input id="aCat" placeholder="Category">
+  <div id="blocksList"></div>
+  <button id="addTextBtn">Add Text</button>
+  <button id="addImageBtn">Add Image</button>
+  <button id="publishBtn">Publish</button>
+</section>
+
+<!-- Zoom modal -->
+<div id="zoomModal" class="zoom-modal" aria-hidden="true">
+  <button class="zoom-close" aria-label="Close zoom">X</button>
+  <img id="zoomImg" alt="Zoomed image">
+</div>
+
+<!-- Modal -->
+<div id="modalBg" class="modal-bg">
+  <div class="modal" id="modalContent">
+    <button class="modal-close" id="modalClose">X</button>
+  </div>
+</div>
+
+<!-- Bottom bar -->
+<footer class="bottom-bar" role="contentinfo" aria-label="Bottom navigation">
+  <button onclick="location.href='#about'"><span>🛈</span> About</button>
+  <button onclick="location.href='#contact'"><span>✉️</span> Contact</button>
+  <button onclick="location.href='#privacy'"><span>🔒</span> Privacy</button>
+</footer>
+
+</body>
 </html>
