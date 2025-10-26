@@ -265,4 +265,45 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
   <button onclick="location.href='#privacy'">Privacy</button>
 </footer>
 
+<style>
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-around; /* buttons evenly spread */
+  align-items: center;
+  gap: 10px;
+  padding: 10px 6px;
+  background: linear-gradient(90deg, #1e3a8a, #2563eb);
+  box-shadow: 0 -6px 20px rgba(0,0,0,0.18);
+  z-index: 100000;
+}
+
+.bottom-bar button {
+  flex: 1; /* equally fill space */
+  margin: 0 5px;
+  background: #ffffff;
+  color: #1e3a8a;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 0;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.bottom-bar button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+@media (max-width:600px){
+  .bottom-bar { padding: 8px 4px; }
+  .bottom-bar button { font-size: 14px; padding: 8px 0; }
+}
+</style>
+
+
 </html>
