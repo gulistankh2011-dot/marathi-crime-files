@@ -260,9 +260,15 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 
 <!-- Bottom bar -->
 <footer class="bottom-bar" role="contentinfo" aria-label="Bottom navigation">
-  <button onclick="location.href='#about'">About</button>
-  <button onclick="location.href='#contact'">Contact</button>
-  <button onclick="location.href='#privacy'">Privacy</button>
+  <button onclick="location.href='#about'">
+    <span>🛈</span> About
+  </button>
+  <button onclick="location.href='#contact'">
+    <span>✉️</span> Contact
+  </button>
+  <button onclick="location.href='#privacy'">
+    <span>🔒</span> Privacy
+  </button>
 </footer>
 
 <style>
@@ -274,10 +280,10 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
   display: flex;
   justify-content: space-around;
   align-items: center;
-  gap: 8px;
-  padding: 6px 6px; /* lower height */
+  gap: 6px;
+  padding: 5px 4px;
   background: linear-gradient(90deg, #1e3a8a, #2563eb);
-  box-shadow: 0 -4px 12px rgba(0,0,0,0.25); /* subtle 3D effect */
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.25);
   z-index: 100000;
 }
 
@@ -289,25 +295,29 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
   font-weight: 700;
   border: none;
   border-radius: 8px;
-  padding: 6px 0; /* smaller button */
+  padding: 5px 0;
   cursor: pointer;
-  box-shadow: 0 4px 0 rgba(0,0,0,0.15); /* 3D base */
+  box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .bottom-bar button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 6px rgba(0,0,0,0.2); /* lifted on hover */
+  box-shadow: 0 6px 6px rgba(0,0,0,0.2);
 }
 
 .bottom-bar button:active {
   transform: translateY(0);
-  box-shadow: 0 4px 0 rgba(0,0,0,0.15); /* press effect */
+  box-shadow: 0 4px 0 rgba(0,0,0,0.15);
 }
 
 @media (max-width:600px){
-  .bottom-bar { padding: 5px 4px; }
-  .bottom-bar button { font-size: 13px; padding: 5px 0; }
+  .bottom-bar button { font-size: 12px; padding: 4px 0; }
 }
 </style>
 
