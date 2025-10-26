@@ -23,6 +23,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
 const ADMIN_EMAIL="gulistankh2011@gmail.com";
 const IMGBB_API_KEY="2387b6e1ec3474b6df29aaa462344077";
 
@@ -74,17 +75,17 @@ async function uploadToImgBB(file){
 
 // Add text/image blocks
 document.getElementById("addTextBtn").onclick=()=>{
-  const t=document.createElement("textarea"); 
-  t.placeholder="Write paragraph..."; 
-  t.dataset.type="text"; 
-  t.className="border p-2 w-full mb-2 rounded"; 
+  const t=document.createElement("textarea");
+  t.placeholder="Write paragraph...";
+  t.dataset.type="text";
+  t.className="border p-2 w-full mb-2 rounded";
   blocksList.appendChild(t);
 }
 document.getElementById("addImageBtn").onclick=()=>{
-  const inp=document.createElement("input"); 
-  inp.type="file"; 
-  inp.dataset.type="image"; 
-  inp.className="w-full mb-2"; 
+  const inp=document.createElement("input");
+  inp.type="file";
+  inp.dataset.type="image";
+  inp.className="w-full mb-2";
   blocksList.appendChild(inp);
 }
 
@@ -119,7 +120,7 @@ onSnapshot(query(collection(db,"news"),orderBy("time","desc")),snap=>{
   const posts=snap.docs.map(d=>({id:d.id,...d.data()}));
   postsArea.innerHTML="";
   posts.forEach(d=>{
-    const firstImg=d.blocks.find(b=>b.type=="image")?.url||"https://via.placeholder.com/300x150?text=No+Image";
+    const firstImg=d.blocks.find(b=>b.type=="image")?.url||"https://via.placeholder.com/300x200?text=No+Image";
     const firstText=d.blocks.find(b=>b.type=="text")?.text.substring(0,80)+"..."||"";
     const card=document.createElement("div");
     card.className="card";
@@ -140,7 +141,9 @@ onSnapshot(noticeRef,snap=>{
       delBtn.textContent="Delete Notice";
       delBtn.className="bg-red-500 text-white px-3 py-1 rounded ml-2";
       noticeEditor.appendChild(delBtn);
-      delBtn.onclick=async()=>{if(confirm("Delete notice?")) await setDoc(noticeRef,{text:""});}
+      delBtn.onclick=async()=>{
+        if(confirm("Delete notice?")) await setDoc(noticeRef,{text:""});
+      }
     }
   }
 });
@@ -156,15 +159,15 @@ function showModal(d){
   });
   const user=auth.currentUser;
   if(user && user.email===ADMIN_EMAIL){
-    const editBtn=document.createElement("button"); 
-    editBtn.textContent="Edit"; 
+    const editBtn=document.createElement("button");
+    editBtn.textContent="Edit";
     editBtn.className="bg-gray-200 px-3 py-1 rounded mr-2";
     editBtn.onclick=()=>{
       editingId=d.id; aTitle.value=d.title; aCat.value=d.category; blocksList.innerHTML="";
       d.blocks.forEach(b=>{
         if(b.type=="text"){
-          const t=document.createElement("textarea"); 
-          t.value=b.text; t.dataset.type="text"; t.className="border p-2 w-full mb-2 rounded"; 
+          const t=document.createElement("textarea");
+          t.value=b.text; t.dataset.type="text"; t.className="border p-2 w-full mb-2 rounded";
           blocksList.appendChild(t);
         } else{
           const inp=document.createElement("input"); inp.type="file"; inp.className="w-full mb-2"; blocksList.appendChild(inp);
@@ -172,8 +175,8 @@ function showModal(d){
       });
       modalBg.style.display="none";
     };
-    const delBtn=document.createElement("button"); 
-    delBtn.textContent="Delete"; 
+    const delBtn=document.createElement("button");
+    delBtn.textContent="Delete";
     delBtn.className="bg-red-500 text-white px-3 py-1 rounded";
     delBtn.onclick=async()=>{if(confirm("Delete this post?")) await deleteDoc(doc(db,"news",d.id)); modalBg.style.display="none";}
     modalContent.appendChild(editBtn); modalContent.appendChild(delBtn);
@@ -184,6 +187,7 @@ function showModal(d){
 
 document.querySelector(".zoom-close").onclick=()=>zoomModal.style.display="none";
 zoomModal.onclick=e=>{if(e.target===zoomModal) zoomModal.style.display="none";}
+
 </script>
 
 <style>
@@ -216,7 +220,6 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 .zoom-close{position:absolute;top:20px;right:30px;background:#fff;border:none;border-radius:50%;font-size:20px;padding:5px 10px;cursor:pointer;}
 </style>
 
-<body>
 <header>
   <div class="flex items-center">
     <img src="https://i.postimg.cc/vTb8F94w/vasalive-png.jpg" alt="Logo">
@@ -260,5 +263,4 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
   <button class="zoom-close">X</button>
   <img id="zoomImg">
 </div>
-</body>
 </html>
