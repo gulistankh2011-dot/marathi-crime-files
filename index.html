@@ -258,62 +258,57 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
   <button id="publishBtn">Publish</button>
 </section>
 
-<!-- 🔹 Bottom Fixed Bar -->
-<footer class="bottom-bar">
+<!-- zoom modal (keep as-is) -->
+<div id="zoomModal" class="zoom-modal" aria-hidden="true">
+  <button class="zoom-close" aria-label="Close zoom">X</button>
+  <img id="zoomImg" alt="Zoomed image">
+</div>
+
+<!-- 🔹 Bottom Fixed Bar (place here — right before closing body) -->
+<footer class="bottom-bar" role="contentinfo" aria-label="Bottom navigation">
   <button onclick="location.href='#about'">About</button>
   <button onclick="location.href='#contact'">Contact</button>
   <button onclick="location.href='#privacy'">Privacy</button>
 </footer>
 
+<!-- Bottom bar styles (one copy only) -->
 <style>
   .bottom-bar {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    background: linear-gradient(90deg, #1e3a8a, #2563eb);
+    padding: 10px 6px;
     display: flex;
     justify-content: space-around;
     align-items: center;
-    padding: 10px 0;
-    box-shadow: 0 -4px 10px rgba(0,0,0,0.2);
-    z-index: 9999;
+    gap:8px;
+    background: linear-gradient(90deg, #1e3a8a, #2563eb);
+    box-shadow: 0 -6px 20px rgba(0,0,0,0.18);
+    z-index: 100000; /* high so it stays on top */
   }
 
   .bottom-bar button {
-    background: white;
+    background: #ffffff;
     color: #1e3a8a;
-    font-weight: bold;
+    font-weight: 700;
     border: none;
     border-radius: 10px;
-    padding: 10px 18px;
+    padding: 8px 14px;
     cursor: pointer;
-    box-shadow: 0 4px 0 rgba(0,0,0,0.15);
-    transition: all 0.2s ease;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.12);
+    transition: transform .14s ease, box-shadow .14s ease;
+    font-size: 15px;
   }
 
-  .bottom-bar button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 12px rgba(0,0,0,0.25);
-  }
+  .bottom-bar button:hover { transform: translateY(-3px); box-shadow: 0 12px 18px rgba(0,0,0,0.18);}
+  .bottom-bar button:active { transform: translateY(0); box-shadow: 0 6px 0 rgba(0,0,0,0.12); }
 
-  .bottom-bar button:active {
-    transform: translateY(0);
-    box-shadow: 0 4px 0 rgba(0,0,0,0.15);
-  }
-
-  @media (max-width: 600px) {
-    .bottom-bar button {
-      padding: 8px 12px;
-      font-size: 14px;
-    }
+  @media (max-width:600px){
+    .bottom-bar { padding: 8px 6px; }
+    .bottom-bar button { padding: 8px 10px; font-size:14px; }
   }
 </style>
 
-
-
-</div>
-
-
-  
+</body>
 </html>
