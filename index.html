@@ -10,14 +10,17 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebas
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, doc, deleteDoc, updateDoc, onSnapshot, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey:"AIzaSyDMvkPqFKDjrMaLlBkercBYoLxEs1GEbng",
-  authDomain:"all-madrsa.firebaseapp.com",
-  projectId:"all-madrsa",
-  storageBucket:"all-madrsa.appspot.com",
-  messagingSenderId:"619313835874",
-  appId:"1:619313835874:web:e33f0c8bdef6d1a7f31e9f"
+  apiKey: "AIzaSyCLCUAiPz-sqhFDskG9g9AwyUI1RdTQWfk",
+  authDomain: "marathi-crime-files.firebaseapp.com",
+  projectId: "marathi-crime-files",
+  storageBucket: "marathi-crime-files.appspot.com", // ← यहाँ सुधार किया गया
+  messagingSenderId: "973325762370",
+  appId: "1:973325762370:web:4fb97306806bbe6cc0d2db",
+  measurementId: "G-1XQPKL3740"
 };
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -121,8 +124,8 @@ const firebaseConfig = { apiKey:"AIzaSyDMvkPqFKDjrMaLlBkercBYoLxEs1GEbng", authD
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const ADMIN_EMAIL="zaradigitalseva@gmail.com";
-const IMGBB_API_KEY="d12c2e4a8650157b2b6b9fe85336ea43";
+const ADMIN_EMAIL="gulistankh2011@gmail.com";
+const IMGBB_API_KEY="2387b6e1ec3474b6df29aaa462344077";
 
 // DOM elements
 const loginBtn=document.getElementById("loginBtn");
