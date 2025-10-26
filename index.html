@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #fafafa;
+      background: #f6f6f6;
       margin: 0; padding: 0;
     }
     header {
@@ -15,27 +15,29 @@
       color: white;
       text-align: center;
       padding: 15px;
-      font-size: 24px;
+      font-size: 22px;
+      position: sticky; top: 0;
     }
     #login-btn, #logout-btn {
       background: white;
       color: #b30000;
       border: none;
-      padding: 8px 14px;
+      padding: 8px 12px;
       border-radius: 5px;
       cursor: pointer;
       font-weight: bold;
+      margin-left: 10px;
     }
     #admin-section {
       display: none;
-      background: #fff;
+      background: white;
       padding: 15px;
       margin: 20px auto;
       max-width: 600px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
       border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    textarea, input[type="file"] {
+    textarea, input[type="file"], input[type="text"] {
       width: 100%;
       margin: 8px 0;
       padding: 10px;
@@ -65,7 +67,7 @@
     .news-card h3 {
       margin: 10px;
       font-size: 18px;
-      color: #333;
+      color: #222;
     }
     #news-popup {
       display: none;
@@ -74,18 +76,19 @@
       background: rgba(0,0,0,0.6);
       justify-content: center;
       align-items: center;
+      z-index: 1000;
     }
     #popup-content {
       background: white;
       padding: 20px;
       border-radius: 10px;
-      max-width: 600px;
+      max-width: 650px;
       max-height: 90%;
       overflow-y: auto;
     }
     #popup-content img {
       width: 100%;
-      margin-bottom: 10px;
+      margin: 8px 0;
       border-radius: 6px;
     }
     #close-popup {
@@ -107,9 +110,9 @@
   </header>
 
   <section id="admin-section">
-    <h2>📰 New Post</h2>
+    <h2>📰 नई खबर डालें</h2>
     <input type="text" id="news-title" placeholder="News Heading..." />
-    <textarea id="news-content" rows="6" placeholder="Write full news... (you can add [image1], [image2] to mark image positions)"></textarea>
+    <textarea id="news-content" rows="6" placeholder="खबर लिखें... (जहां तस्वीर डालनी हो वहां [image1], [image2], [image3] लिखें)"></textarea>
     <input type="file" id="news-images" multiple />
     <button id="post-btn">Post News</button>
   </section>
@@ -125,11 +128,10 @@
   </div>
 
   <script type="module">
-    // ✅ Firebase setup
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } 
       from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, serverTimestamp, orderBy, query } 
+    import { getFirestore, collection, addDoc, getDocs, orderBy, query, serverTimestamp } 
       from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
     import { getStorage, ref, uploadBytes, getDownloadURL } 
       from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
@@ -160,19 +162,16 @@
     const popupBody = document.getElementById("popup-body");
     const closePopup = document.getElementById("close-popup");
 
-    // 🟢 Login
+    // 🔹 Login
     loginBtn.addEventListener("click", async () => {
-      try {
-        await signInWithPopup(auth, provider);
-      } catch (error) {
-        alert("Login error: " + error.message);
-      }
+      try { await signInWithPopup(auth, provider); } 
+      catch (e) { alert(e.message); }
     });
 
-    // 🔴 Logout
+    // 🔹 Logout
     logoutBtn.addEventListener("click", () => signOut(auth));
 
-    // 👀 Auth state listener
+    // 🔹 Auth Listener
     onAuthStateChanged(auth, (user) => {
       if (user) {
         loginBtn.style.display = "none";
@@ -185,19 +184,19 @@
       }
     });
 
-    // 📰 Post news
+    // 🔹 Post News
     postBtn.addEventListener("click", async () => {
-      const title = document.getElementById("news-title").value;
-      const content = document.getElementById("news-content").value;
+      const title = document.getElementById("news-title").value.trim();
+      const content = document.getElementById("news-content").value.trim();
       const files = document.getElementById("news-images").files;
 
-      if (!title || !content) return alert("कृपया Title और News दोनों भरें");
+      if (!title || !content) return alert("कृपया Title और Content दोनों लिखें।");
 
       const imgURLs = [];
       for (let file of files) {
-        const storageRef = ref(storage, "news/" + file.name);
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
+        const fileRef = ref(storage, "news/" + Date.now() + "_" + file.name);
+        await uploadBytes(fileRef, file);
+        const url = await getDownloadURL(fileRef);
         imgURLs.push(url);
       }
 
@@ -208,23 +207,23 @@
         timestamp: serverTimestamp()
       });
 
-      alert("News posted successfully!");
+      alert("✅ News Successfully Posted!");
       location.reload();
     });
 
-    // 📄 Fetch news
+    // 🔹 Load News
     async function loadNews() {
       const q = query(collection(db, "news"), orderBy("timestamp", "desc"));
       const snap = await getDocs(q);
       newsList.innerHTML = "";
       snap.forEach(doc => {
         const data = doc.data();
-        const img = data.images?.[0] || "https://via.placeholder.com/400x200";
-        const div = document.createElement("div");
-        div.className = "news-card";
-        div.innerHTML = `<img src="${img}"><h3>${data.title}</h3>`;
-        div.onclick = () => showPopup(data);
-        newsList.appendChild(div);
+        const card = document.createElement("div");
+        card.className = "news-card";
+        const image = data.images?.[0] || "https://via.placeholder.com/400x200?text=News";
+        card.innerHTML = `<img src="${image}"><h3>${data.title}</h3>`;
+        card.onclick = () => showPopup(data);
+        newsList.appendChild(card);
       });
     }
 
@@ -232,12 +231,19 @@
       popup.style.display = "flex";
       popupTitle.innerText = data.title;
       let html = data.content;
-      if (data.images && data.images.length) {
+
+      if (data.images?.length) {
         data.images.forEach((img, i) => {
-          html = html.replace(`[image${i+1}]`, `<img src="${img}">`);
+          html = html.replaceAll(`[image${i + 1}]`, `<img src="${img}">`);
         });
       }
-      popupBody.innerHTML = html;
+
+      // अगर कोई marker नहीं मिला तो आखिरी में सब image दिखा दो
+      if (!/\[image\d+\]/.test(data.content) && data.images?.length) {
+        data.images.forEach(img => { html += `<img src="${img}">`; });
+      }
+
+      popupBody.innerHTML = html.replace(/\n/g, "<br>");
     }
 
     closePopup.onclick = () => (popup.style.display = "none");
