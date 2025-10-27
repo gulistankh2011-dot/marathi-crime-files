@@ -322,12 +322,15 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
     <h1 class="font-bold text-lg sm:text-xl">Marathi Crime Files</h1>
   </div>
 
-  <!-- 🔹 Navigation Buttons -->
-  <div class="hidden sm:flex space-x-2">
-    <button class="nav-btn">Story</button>
-    <button class="nav-btn">Gumshuda</button>
-    <button class="nav-btn">Lawarish</button>
-    <button class="nav-btn">Crime</button>
+  <!-- 🔹 Dropdown Menu -->
+  <div class="relative">
+    <button onclick="toggleMenu()" class="nav-btn">☰ Menu</button>
+    <div id="menuList" class="hidden absolute right-0 mt-2 bg-white text-blue-900 rounded-lg shadow-lg overflow-hidden">
+      <button class="dropdown-btn">Story</button>
+      <button class="dropdown-btn">Gumshuda</button>
+      <button class="dropdown-btn">Lawarish</button>
+      <button class="dropdown-btn">Crime</button>
+    </div>
   </div>
 
   <!-- 🔹 Auth Buttons -->
@@ -338,7 +341,6 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 </header>
 
 <style>
-/* 🔸 Common Header Buttons */
 .nav-btn {
   background: linear-gradient(180deg, #ffffff, #dbeafe);
   color: #1e3a8a;
@@ -351,16 +353,24 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
   font-size: 14px;
   transition: transform 0.2s, box-shadow 0.2s;
 }
-.nav-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 0 #60a5fa;
+.nav-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #60a5fa; }
+.nav-btn:active { transform: translateY(1px); box-shadow: 0 2px 0 #3b82f6; }
+
+.dropdown-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 14px;
+  font-weight: 600;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: background 0.2s;
 }
-.nav-btn:active {
-  transform: translateY(1px);
-  box-shadow: 0 2px 0 #3b82f6;
+.dropdown-btn:hover {
+  background: #e0e7ff;
 }
 
-/* 🔸 Auth Buttons (Login/Logout) */
 .auth-btn {
   color: #fff;
   font-weight: 600;
@@ -369,15 +379,16 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
   box-shadow: 0 4px 0 rgba(0,0,0,0.25);
   transition: transform 0.2s, box-shadow 0.2s;
 }
-.auth-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 8px rgba(0,0,0,0.3);
-}
-.auth-btn:active {
-  transform: translateY(1px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
+.auth-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 8px rgba(0,0,0,0.3); }
+.auth-btn:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 </style>
+
+<script>
+function toggleMenu() {
+  document.getElementById('menuList').classList.toggle('hidden');
+}
+</script>
+
 
 
 <div class="notice-ticker"><span class="ticker-text" id="noticeText"></span></div>
