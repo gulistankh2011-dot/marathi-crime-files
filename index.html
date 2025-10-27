@@ -114,38 +114,30 @@ onSnapshot(query(collection(db,"news"),orderBy("time","desc")),snap=>{
 // 🔹 Render Posts
 function renderPosts(){
   postsArea.innerHTML="";
-  const sliderImgs = [];
-
   currentPosts.forEach((d,i)=>{
-    const firstImg = d.blocks.find(b=>b.type==="image")?.url || "https://via.placeholder.com/300x200?text=No+Image";
+    const images = d.blocks.filter(b=>b.type==="image").map(b=>b.url);
     const firstText = d.blocks.find(b=>b.type==="text")?.text.substring(0,80)+"..." || "";
+    
     const card = document.createElement("div");
     card.className="card";
-    
-    card.onclick = ()=>alert("Clicked: "+d.title);
-
     card.innerHTML = `
-      <div class="card-image-wrapper">
-        <img src='${firstImg}' class='image-zoom'>
+      <div class="image-slider-container">
+        ${images.map((url,j)=>`<img src="${url}" class="slider-img" style="display:${j===0?'block':'none'}">`).join('')}
       </div>
-      <div class='card-body'>
-        <h3>${d.title}</h3>
-        <p>${firstText}</p>
-      </div>
+      <div class="card-body"><h3>${d.title}</h3><p>${firstText}</p></div>
     `;
+    card.onclick = ()=>alert(`Post clicked: ${d.title}`);
     postsArea.appendChild(card);
-    sliderImgs.push(firstImg);
-  });
 
-  // Image slider (advertising) per card
-  let idx = 0;
-  const images = document.querySelectorAll(".image-zoom");
-  images.forEach((img,i)=>{if(i!==0) img.style.display="none";});
-  setInterval(()=>{
-    images.forEach(img=>img.style.display="none");
-    if(images[idx]) images[idx].style.display="block";
-    idx = (idx+1)%images.length;
-  },3000);
+    // Image slider animation
+    let idx = 0;
+    const imgs = card.querySelectorAll(".slider-img");
+    setInterval(()=>{
+      imgs.forEach(img=>img.style.display="none");
+      imgs[idx].style.display="block";
+      idx = (idx+1)%imgs.length;
+    },3000);
+  });
 
   // Headline ticker
   headlineText.textContent=currentPosts.slice(0,5).map(p=>p.title).join(" — ");
@@ -153,6 +145,16 @@ function renderPosts(){
 
 // 🔹 Menu toggle
 function toggleMenu(){document.getElementById("menuList").classList.toggle("hidden");}
+
+// 🔹 Notice save
+document.getElementById("saveNoticeBtn").onclick=()=>{
+  setDoc(doc(db,"settings","notice"),{text:noticeInput.value.trim()});
+}
+
+// 🔹 Load Notice
+onSnapshot(doc(db,"settings","notice"),snap=>{
+  noticeText.textContent = snap.exists()?snap.data().text:"";
+});
 </script>
 
 <style>
@@ -161,27 +163,23 @@ header{display:flex;justify-content:space-between;align-items:center;padding:8px
 header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:cover;}
 .nav-btn, .auth-btn{padding:4px 8px;border-radius:6px;font-weight:600;cursor:pointer;transition:transform 0.2s;}
 .nav-btn:hover,.auth-btn:hover{transform:scale(1.05);}
-
-.notice-ticker{background:#dc2626;color:white;font-weight:600;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:50px;z-index:300;}
+.notice-ticker{background:#dc2626;color:white;font-weight:600;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:60px;z-index:300;}
 .ticker-text{display:inline-block;padding-left:100%;animation:scrollNotice 15s linear infinite;}
 @keyframes scrollNotice{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
-
-.headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;margin-top:2px;}
-
+.headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:90px;z-index:300;}
 .posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:8px;margin-top:10px;}
-.card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(2,6,23,0.06);cursor:pointer;transition:transform 0.2s;position:relative;display:flex;flex-direction:column;}
+.card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(2,6,23,0.06);cursor:pointer;transition:transform 0.2s;position:relative;}
 .card:hover{transform:scale(1.02);}
-.card-image-wrapper{width:100%;padding-top:56.25%;position:relative;overflow:hidden;}
-.card-image-wrapper img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;} /* contain for full image */
-.card-body{padding:8px;flex-grow:1;}
+.card img{width:100%;height:180px;object-fit:cover;display:block;}
+.card-body{padding:8px;}
 .card-body h3{font-weight:700;font-size:18px;margin-bottom:4px;}
 .card-body p{font-size:14px;color:#555;margin-bottom:6px;}
-
 .editor{padding:12px;background:#fff;margin:6px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
 .editor input,.editor textarea{border:1px solid #ccc;border-radius:6px;padding:6px;margin-bottom:6px;width:100%;}
 .editor button{padding:6px 12px;margin-right:6px;border-radius:6px;background:#1e40af;color:white;cursor:pointer;}
+.image-slider-container{position:relative;width:100%;height:180px;overflow:hidden;}
+.image-slider-container img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;transition:opacity 0.5s;}
 </style>
-
 </head>
 <body>
 
@@ -205,7 +203,7 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
   </div>
 </header>
 
-<div class="notice-ticker"><span id="noticeText">🚨 Breaking News: Marathi Crime Files updates daily! Stay tuned! 🚨</span></div>
+<div class="notice-ticker"><span id="noticeText"></span></div>
 <div class="headline-ticker"><span id="headlineText"></span></div>
 
 <section id="editorArea" class="editor hidden">
