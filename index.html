@@ -88,7 +88,6 @@ document.getElementById("publishBtn").onclick = async()=>{
   for(const el of blocksList.children){
     if(el.dataset.type==="text" && el.value.trim()) blocks.push({type:"text",text:el.value.trim()});
     else if(el.type==="file" && el.files.length>0){
-      // Upload image to imgbb
       const formData = new FormData();
       formData.append("image",el.files[0]);
       const res = await fetch(`https://api.imgbb.com/1/upload?key=2387b6e1ec3474b6df29aaa462344077`,{method:"POST",body:formData});
@@ -106,21 +105,10 @@ document.getElementById("publishBtn").onclick = async()=>{
   aTitle.value=aCat.value=""; blocksList.innerHTML="";
 }
 
-// 🔹 Save Notice
-document.getElementById("saveNoticeBtn").onclick = async()=>{
-  await setDoc(doc(db,"settings","notice"),{text:noticeInput.value.trim()});
-  noticeInput.value = "";
-}
-
 // 🔹 Load Posts
 onSnapshot(query(collection(db,"news"),orderBy("time","desc")),snap=>{
   currentPosts = snap.docs.map(d=>({id:d.id,...d.data()}));
   renderPosts();
-});
-
-// 🔹 Load Notice
-onSnapshot(doc(db,"settings","notice"),snap=>{
-  if(snap.exists()) noticeText.textContent = snap.data().text;
 });
 
 // 🔹 Render Posts
@@ -133,12 +121,23 @@ function renderPosts(){
     const firstText = d.blocks.find(b=>b.type==="text")?.text.substring(0,80)+"..." || "";
     const card = document.createElement("div");
     card.className="card";
-    card.innerHTML = `<img src='${firstImg}' class='image-zoom'><div class='card-body'><h3>${d.title}</h3><p>${firstText}</p></div>`;
+    
+    card.onclick = ()=>alert("Clicked: "+d.title);
+
+    card.innerHTML = `
+      <div class="card-image-wrapper">
+        <img src='${firstImg}' class='image-zoom'>
+      </div>
+      <div class='card-body'>
+        <h3>${d.title}</h3>
+        <p>${firstText}</p>
+      </div>
+    `;
     postsArea.appendChild(card);
     sliderImgs.push(firstImg);
   });
 
-  // 🔹 Image slider animation (advertising)
+  // Image slider (advertising) per card
   let idx = 0;
   const images = document.querySelectorAll(".image-zoom");
   images.forEach((img,i)=>{if(i!==0) img.style.display="none";});
@@ -148,7 +147,7 @@ function renderPosts(){
     idx = (idx+1)%images.length;
   },3000);
 
-  // 🔹 Headline ticker
+  // Headline ticker
   headlineText.textContent=currentPosts.slice(0,5).map(p=>p.title).join(" — ");
 }
 
@@ -162,21 +161,27 @@ header{display:flex;justify-content:space-between;align-items:center;padding:8px
 header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:cover;}
 .nav-btn, .auth-btn{padding:4px 8px;border-radius:6px;font-weight:600;cursor:pointer;transition:transform 0.2s;}
 .nav-btn:hover,.auth-btn:hover{transform:scale(1.05);}
+
 .notice-ticker{background:#dc2626;color:white;font-weight:600;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:50px;z-index:300;}
 .ticker-text{display:inline-block;padding-left:100%;animation:scrollNotice 15s linear infinite;}
-@keyframes scrollNotice{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
-.headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:75px;z-index:290;}
+@keyframes scrollNotice{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
+
+.headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;margin-top:2px;}
+
 .posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:8px;margin-top:10px;}
-.card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(2,6,23,0.06);cursor:pointer;transition:transform 0.2s;position:relative;}
+.card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(2,6,23,0.06);cursor:pointer;transition:transform 0.2s;position:relative;display:flex;flex-direction:column;}
 .card:hover{transform:scale(1.02);}
-.card img{width:100%;height:150px;object-fit:cover;display:block;}
-.card-body{padding:8px;}
+.card-image-wrapper{width:100%;padding-top:56.25%;position:relative;overflow:hidden;}
+.card-image-wrapper img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;} /* contain for full image */
+.card-body{padding:8px;flex-grow:1;}
 .card-body h3{font-weight:700;font-size:18px;margin-bottom:4px;}
 .card-body p{font-size:14px;color:#555;margin-bottom:6px;}
+
 .editor{padding:12px;background:#fff;margin:6px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
 .editor input,.editor textarea{border:1px solid #ccc;border-radius:6px;padding:6px;margin-bottom:6px;width:100%;}
 .editor button{padding:6px 12px;margin-right:6px;border-radius:6px;background:#1e40af;color:white;cursor:pointer;}
 </style>
+
 </head>
 <body>
 
@@ -200,7 +205,7 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
   </div>
 </header>
 
-<div class="notice-ticker"><span class="ticker-text" id="noticeText"></span></div>
+<div class="notice-ticker"><span id="noticeText">🚨 Breaking News: Marathi Crime Files updates daily! Stay tuned! 🚨</span></div>
 <div class="headline-ticker"><span id="headlineText"></span></div>
 
 <section id="editorArea" class="editor hidden">
