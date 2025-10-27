@@ -97,9 +97,11 @@ document.getElementById("publishBtn").onclick = async()=>{
 }
 
 // Load posts
+let currentPosts = [];
 onSnapshot(query(collection(db,"news"),orderBy("time","desc")),snap=>{
-  const posts = snap.docs.map(d=>({id:d.id,...d.data()}));
-  renderPosts(posts);
+  currentPosts = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderPosts(currentPosts);
+  startHeadlineTicker(currentPosts);
 });
 
 // Render posts
@@ -110,12 +112,10 @@ function renderPosts(posts){
     const firstText = post.blocks.find(b=>b.type==="text")?.text.substring(0,80)+"..." || "";
     const card = document.createElement("div");
     card.className="card";
-    card.innerHTML = `<div class="card-img-wrapper"><img src='${firstImg}' class='card-img'></div>
-                      <div class='card-body'><h3>${post.title}</h3><p>${firstText}</p></div>`;
+    card.innerHTML = `<img src='${firstImg}' class='card-img'><div class='card-body'><h3>${post.title}</h3><p>${firstText}</p></div>`;
     card.onclick = ()=>showModal(post);
     postsArea.appendChild(card);
   });
-  startHeadlineTicker(posts);
 }
 
 // Modal
@@ -143,21 +143,19 @@ function showModal(post){
   const closeBtn = modalContent.querySelector("#modalClose");
   closeBtn.onclick = ()=>modalBg.style.display="none";
 
-  modalBg.style.display="flex";
-}
+  // Close modal on outside click
+  modalBg.onclick = (e)=>{
+    if(e.target===modalBg) modalBg.style.display="none";
+  }
 
-// Close modal on background click
-modalBg.onclick = (e)=>{
-  if(e.target===modalBg) modalBg.style.display="none";
+  modalBg.style.display="flex";
 }
 
 // Menu toggle
 function toggleMenu(){document.getElementById("menuList").classList.toggle("hidden");}
 
-// 🔹 Notice Save
-const saveNoticeBtn = document.getElementById("saveNoticeBtn");
-
-saveNoticeBtn.onclick = async () => {
+// Notice Save
+document.getElementById("saveNoticeBtn").onclick = async () => {
   const text = noticeInput.value.trim();
   if(!text) return alert("Enter notice text!");
   try {
@@ -169,32 +167,34 @@ saveNoticeBtn.onclick = async () => {
   }
 };
 
-// 🔹 Notice Live Scroll
+// Notice Live Scroll
 const noticeRef = doc(db, "settings", "notice");
 onSnapshot(noticeRef, snap => {
   const ticker = document.querySelector(".ticker-text");
   if (snap.exists()) {
     noticeText.textContent = snap.data().text;
     ticker.style.animation = "none";
-    void ticker.offsetWidth; 
+    void ticker.offsetWidth;
     ticker.style.animation = "scrollNotice 15s linear infinite";
   } else {
     noticeText.textContent = "";
   }
 });
 
-// Headline Ticker
-let headlineInterval;
+// Headline Ticker - Smooth Scroll
 function startHeadlineTicker(posts){
   const headlineEl = document.getElementById("headlineText");
-  let idx=0;
-  if(headlineInterval) clearInterval(headlineInterval);
-  headlineInterval = setInterval(()=>{
-    if(posts.length===0) return;
-    headlineEl.textContent = posts[idx].title;
-    idx = (idx+1) % posts.length;
-  },3000);
+  if(!posts || posts.length===0){
+    headlineEl.textContent = "";
+    return;
+  }
+  const text = posts.map(p=>p.title).join(" — ") + " — ";
+  headlineEl.textContent = text;
+  headlineEl.style.animation = "none";
+  void headlineEl.offsetWidth;
+  headlineEl.style.animation = `scrollHeadline ${Math.max(15,text.length/2)}s linear infinite`;
 }
+
 </script>
 
 <style>
@@ -207,11 +207,12 @@ header img{height:40px;width:auto;border-radius:6px;}
 .ticker-text{display:inline-block;padding-left:100%;animation:scrollNotice 15s linear infinite;}
 @keyframes scrollNotice{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
 .headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;}
+@keyframes scrollHeadline{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
+#headlineText{display:inline-block;white-space:nowrap;padding-left:100%;}
 .posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:8px;margin-top:10px;}
 .card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(2,6,23,0.06);cursor:pointer;transition:transform 0.2s;position:relative;}
 .card:hover{transform:scale(1.02);}
-.card-img-wrapper{width:100%;height:200px;overflow:hidden;border-bottom:1px solid #ccc;}
-.card-img{width:100%;height:100%;object-fit:cover;display:block;}
+.card-img{width:100%;height:200px;object-fit:contain;display:block;}
 .card-body{padding:8px;}
 .card-body h3{font-weight:700;font-size:18px;margin-bottom:4px;}
 .card-body p{font-size:14px;color:#555;margin-bottom:6px;}
