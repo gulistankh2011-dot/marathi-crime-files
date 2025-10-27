@@ -5,55 +5,48 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Marathi Crime Files</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, doc, deleteDoc, updateDoc, onSnapshot, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-// Firebase config
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// Firebase setup
 const firebaseConfig = {
   apiKey: "AIzaSyCLCUAiPz-sqhFDskG9g9AwyUI1RdTQWfk",
   authDomain: "marathi-crime-files.firebaseapp.com",
   projectId: "marathi-crime-files",
   storageBucket: "marathi-crime-files.appspot.com",
   messagingSenderId: "973325762370",
-  appId: "1:973325762370:web:4fb97306806bbe6cc0d2db",
-  measurementId: "G-1XQPKL3740"
+  appId: "1:973325762370:web:4fb97306806bbe6cc0d2db"
 };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+const ADMIN_EMAIL = "gulistankh2011@gmail.com";
 
-const ADMIN_EMAIL="gulistankh2011@gmail.com";
-const IMGBB_API_KEY="2387b6e1ec3474b6df29aaa462344077";
+// DOM Elements
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const editorArea = document.getElementById("editorArea");
+const noticeEditor = document.getElementById("noticeEditor");
+const postsArea = document.getElementById("postsArea");
+const blocksList = document.getElementById("blocksList");
+const aTitle = document.getElementById("aTitle");
+const aCat = document.getElementById("aCat");
+const noticeInput = document.getElementById("noticeInput");
+const noticeText = document.getElementById("noticeText");
+const headlineText = document.getElementById("headlineText");
+const modalBg = document.getElementById("modalBg");
+const modalContent = document.getElementById("modalContent");
 
-// DOM
-const loginBtn=document.getElementById("loginBtn");
-const logoutBtn=document.getElementById("logoutBtn");
-const editorArea=document.getElementById("editorArea");
-const noticeEditor=document.getElementById("noticeEditor");
-const postsArea=document.getElementById("postsArea");
-const blocksList=document.getElementById("blocksList");
-const aTitle=document.getElementById("aTitle");
-const aCat=document.getElementById("aCat");
-const noticeText=document.getElementById("noticeText");
-const headlineText=document.getElementById("headlineText");
-const modalBg=document.getElementById("modalBg");
-const modalClose=document.getElementById("modalClose");
-const modalContent=document.getElementById("modalContent");
-const zoomModal=document.getElementById("zoomModal");
-const zoomImg=document.getElementById("zoomImg");
+// Login/Logout
+loginBtn.onclick = () => signInWithPopup(auth, provider).catch(e => alert(e.message));
+logoutBtn.onclick = () => signOut(auth);
 
-let editingId=null;
-let currentPosts=[];
-let currentIndex=0;
-
-// Auth
-loginBtn.onclick = async()=>{await signInWithPopup(auth,new GoogleAuthProvider());}
-logoutBtn.onclick=()=>signOut(auth);
-
-auth.onAuthStateChanged(user=>{
-  if(user && user.email===ADMIN_EMAIL){
+onAuthStateChanged(auth, user => {
+  if(user && user.email === ADMIN_EMAIL){
     editorArea.classList.remove("hidden");
     noticeEditor.classList.remove("hidden");
     loginBtn.classList.add("hidden");
@@ -66,277 +59,165 @@ auth.onAuthStateChanged(user=>{
   }
 });
 
-// IMGBB Upload
-async function uploadToImgBB(file){
-  const formData=new FormData();
-  formData.append("image",file);
-  const res=await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,{method:"POST",body:formData});
-  const data=await res.json();
-  return data.data.url;
-}
-
-// Add text/image blocks
-document.getElementById("addTextBtn").onclick=()=>{
-  const t=document.createElement("textarea");
-  t.placeholder="Write paragraph...";
-  t.dataset.type="text";
-  t.className="border p-2 w-full mb-2 rounded";
+// Add blocks
+document.getElementById("addTextBtn").onclick = () => {
+  const t = document.createElement("textarea");
+  t.placeholder = "Write paragraph...";
+  t.dataset.type = "text";
+  t.className = "border p-2 w-full mb-2 rounded";
   blocksList.appendChild(t);
 }
-document.getElementById("addImageBtn").onclick=()=>{
-  const inp=document.createElement("input");
-  inp.type="file";
-  inp.dataset.type="image";
-  inp.className="w-full mb-2";
+document.getElementById("addImageBtn").onclick = () => {
+  const inp = document.createElement("input");
+  inp.type = "file";
+  inp.dataset.type = "image";
+  inp.className = "w-full mb-2";
   blocksList.appendChild(inp);
 }
 
-// Publish/Update news
-document.getElementById("publishBtn").onclick=async()=>{
-  const title=aTitle.value.trim(), cat=aCat.value.trim();
+// Publish news
+document.getElementById("publishBtn").onclick = async() => {
+  const title = aTitle.value.trim();
+  const cat = aCat.value.trim();
   if(!title) return alert("Enter title!");
-  const blocks=[];
+  const blocks = [];
   for(const el of blocksList.children){
-    if(el.dataset.type=="text" && el.value.trim()) blocks.push({type:"text",text:el.value.trim()});
-    else if(el.type=="file" && el.files.length>0){
-      const url=await uploadToImgBB(el.files[0]);
-      if(url) blocks.push({type:"image",url});
+    if(el.dataset.type === "text" && el.value.trim()) blocks.push({type:"text", text:el.value.trim()});
+    else if(el.type === "file" && el.files.length > 0){
+      const formData = new FormData();
+      formData.append("image", el.files[0]);
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=2387b6e1ec3474b6df29aaa462344077`, {method:"POST", body:formData});
+      const data = await res.json();
+      if(data.data?.url) blocks.push({type:"image", url:data.data.url});
     }
   }
-  if(blocks.length===0) return alert("Add content!");
-  if(editingId){
-    await updateDoc(doc(db,"news",editingId),{title,category:cat,blocks,time:Date.now()});
-    editingId=null;
-  } else {
-    await addDoc(collection(db,"news"),{title,category:cat,blocks,time:Date.now()});
-  }
-  aTitle.value=aCat.value=""; blocksList.innerHTML="";
+  if(blocks.length === 0) return alert("Add content!");
+  await addDoc(collection(db,"news"), {title, category:cat, blocks, time:Date.now()});
+  aTitle.value = aCat.value = ""; blocksList.innerHTML = "";
 }
-
-// Admin Notice save/edit/delete
-const noticeRef=doc(db,"settings","notice");
-document.getElementById("saveNoticeBtn").onclick=()=>setDoc(noticeRef,{text:document.getElementById("noticeInput").value.trim()});
 
 // Load posts
-onSnapshot(query(collection(db,"news"),orderBy("time","desc")),snap=>{
-  currentPosts = snap.docs.map(d=>({id:d.id,...d.data()}));
-  renderPosts();
+onSnapshot(query(collection(db,"news"), orderBy("time","desc")), snap => {
+  const posts = snap.docs.map(d => ({id:d.id,...d.data()}));
+  renderPosts(posts);
 });
 
-function renderPosts(){
-  postsArea.innerHTML="";
-  const user = auth.currentUser;
-  let postsToShow = [...currentPosts];
-  if(user && user.email===ADMIN_EMAIL){
-    // Admin posts on top
-    postsToShow = [...currentPosts].sort((a,b)=>b.time - a.time);
-  }
-  postsToShow.forEach((d,i)=>{
-    const firstImg=d.blocks.find(b=>b.type=="image")?.url||"https://via.placeholder.com/300x200?text=No+Image";
-    const firstText=d.blocks.find(b=>b.type=="text")?.text.substring(0,80)+"..."||"";
-    const card=document.createElement("div");
+// Render posts
+function renderPosts(posts){
+  postsArea.innerHTML = "";
+  posts.forEach(post => {
+    const firstImg = post.blocks.find(b => b.type==="image")?.url || "https://via.placeholder.com/300x200?text=No+Image";
+    const firstText = post.blocks.find(b => b.type==="text")?.text.substring(0,80)+"..." || "";
+    const card = document.createElement("div");
     card.className="card";
-    card.innerHTML=`<img src='${firstImg}' class='image-zoom'><div class='card-body'><h3>${d.title}</h3><p>${firstText}</p></div>`;
-    card.onclick=()=>showModal(i);
+    card.innerHTML = `<img src='${firstImg}' class='card-img'><div class='card-body'><h3>${post.title}</h3><p>${firstText}</p></div>`;
+    card.onclick = () => showModal(post);
     postsArea.appendChild(card);
   });
-  headlineText.textContent=currentPosts.slice(0,5).map(p=>p.title).join(" — ");
+  headlineText.textContent = posts.slice(0,5).map(p=>p.title).join(" — ");
 }
 
-// Notice
-onSnapshot(noticeRef,snap=>{
-  noticeText.textContent=snap.exists()?snap.data().text:"";
-  const user=auth.currentUser;
-  if(user && user.email===ADMIN_EMAIL){
-    if(!document.getElementById("deleteNoticeBtn")){
-      const delBtn=document.createElement("button");
-      delBtn.id="deleteNoticeBtn";
-      delBtn.textContent="Delete Notice";
-      delBtn.className="bg-red-500 text-white px-3 py-1 rounded ml-2";
-      noticeEditor.appendChild(delBtn);
-      delBtn.onclick=async()=>{
-        if(confirm("Delete notice?")) await setDoc(noticeRef,{text:""});
-      }
+// Modal
+function showModal(post){
+  modalContent.innerHTML = `<h2 class='text-lg font-bold mb-2'>${post.title}</h2>`;
+  post.blocks.forEach(b => {
+    if(b.type==="text") modalContent.innerHTML += `<p class='mb-2 text-gray-800'>${b.text}</p>`;
+    else modalContent.innerHTML += `<img src='${b.url}' class='w-full mb-2 object-contain'>`;
+  });
+
+  onAuthStateChanged(auth, user => {
+    if(user && user.email===ADMIN_EMAIL){
+      const delBtn = document.createElement("button");
+      delBtn.textContent="❌ Delete News";
+      delBtn.className="bg-red-600 text-white p-2 rounded mt-2";
+      delBtn.onclick = async()=>{
+        if(confirm("Are you sure?")) await deleteDoc(doc(db,"news",post.id));
+        modalBg.style.display="none";
+      };
+      modalContent.appendChild(delBtn);
     }
+  });
+
+  modalBg.style.display="flex";
+}
+
+// Close modal on background click
+modalBg.onclick = (e) => { if(e.target === modalBg) modalBg.style.display="none"; }
+
+// Menu toggle
+function toggleMenu(){ document.getElementById("menuList").classList.toggle("hidden"); }
+
+// Notice
+document.getElementById("saveNoticeBtn").onclick = async () => {
+  const text = noticeInput.value.trim();
+  if(!text) return alert("Enter notice text!");
+  await setDoc(doc(db,"settings","notice"), {text, time:Date.now()});
+  noticeInput.value = "";
+};
+
+// Live notice scroll
+const noticeRef = doc(db,"settings","notice");
+onSnapshot(noticeRef, snap => {
+  if(snap.exists()){
+    noticeText.textContent = snap.data().text;
+    const ticker = document.querySelector(".ticker-text");
+    ticker.style.animation = "none";
+    void ticker.offsetWidth;
+    ticker.style.animation = "scrollNotice 10s linear infinite";
   }
 });
 
-// Show modal
-modalClose?.addEventListener('click',()=>modalBg.style.display="none");
-modalBg?.addEventListener('click', e=>{if(e.target===modalBg) modalBg.style.display="none";})
-
-function showModal(index){
-  const d = currentPosts[index];
-  currentIndex = index;
-  modalContent.innerHTML=`<h2 class='text-lg font-bold mb-2'>${d.title}</h2>`;
-  d.blocks.forEach(b=>{
-    if(b.type==="text") modalContent.innerHTML+=`<p class='mb-2 text-gray-800'>${b.text}</p>`;
-    else modalContent.innerHTML+=`<img src='${b.url}' class='image-zoom mb-2'>`;
-  });
-
-  const user = auth.currentUser;
-  if(user && user.email === ADMIN_EMAIL){
-    const adminDiv = document.createElement("div");
-    adminDiv.style.position="absolute";
-    adminDiv.style.top="8px";
-    adminDiv.style.right="8px";
-    adminDiv.style.display="flex";
-    adminDiv.style.gap="6px";
-    adminDiv.style.zIndex="30";
-
-    const editBtn = document.createElement("button");
-    editBtn.innerHTML="✏️ Edit";
-    editBtn.onclick = (e)=>{
-      e.stopPropagation();
-      editingId = d.id;
-      aTitle.value = d.title;
-      aCat.value = d.category;
-      blocksList.innerHTML="";
-      d.blocks.forEach(b=>{
-        if(b.type==="text"){
-          const t = document.createElement("textarea");
-          t.value = b.text;
-          t.dataset.type="text";
-          t.className="border p-2 w-full mb-2 rounded";
-          blocksList.appendChild(t);
-        } else {
-          const inp = document.createElement("input");
-          inp.type="file";
-          inp.className="w-full mb-2";
-          blocksList.appendChild(inp);
-        }
-      });
-      modalBg.style.display="none";
-    };
-
-    const delBtn = document.createElement("button");
-    delBtn.innerHTML="🗑️ Delete";
-    delBtn.style.background="linear-gradient(45deg,#ef4444,#b91c1c)";
-    delBtn.onclick=async(e)=>{
-      e.stopPropagation();
-      if(confirm("Delete this post?")){
-        await deleteDoc(doc(db,"news",d.id));
-        modalBg.style.display="none";
-      }
-    };
-
-    adminDiv.appendChild(editBtn);
-    adminDiv.appendChild(delBtn);
-    modalContent.appendChild(adminDiv);
-  }
-
-  modalBg.style.display="flex";
-
-  modalContent.querySelectorAll("img.image-zoom").forEach(img=>{
-    img.onclick=()=>{zoomImg.src=img.src; zoomModal.style.display="flex";}
-  });
-}
-
-document.querySelector(".zoom-close").onclick=()=>zoomModal.style.display="none";
-zoomModal.onclick=e=>{if(e.target===zoomModal) zoomModal.style.display="none";}
 </script>
 
 <style>
 body{margin:0;font-family:Arial,sans-serif;background:#f6f7fb;color:#0b2540;}
-header{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#1e40af;color:white;position:sticky;top:0;z-index:300;box-shadow:0 2px 5px rgba(0,0,0,0.2);}
-header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:cover;}
-.header-buttons button{padding:6px 12px;margin-left:6px;border-radius:6px;font-weight:600;cursor:pointer;transition:transform 0.2s;}
-.header-buttons button:hover{transform:scale(1.05);}
-.notice-ticker,.headline-ticker{min-height:28px;overflow:hidden;white-space:nowrap;color:white;position:sticky;z-index:250;}
-.notice-ticker{background:#dc2626;padding:6px;top:56px;}
-.headline-ticker{background:#1e40af;padding:6px;top:88px;}
-.ticker-text{display:inline-block;padding-right:50px;animation:scroll 20s linear infinite;}
-@keyframes scroll{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
-.posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:8px;margin-top:116px;}
-.card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(2,6,23,0.06);cursor:pointer;transition:transform 0.2s;position:relative;}
+header{display:flex;justify-between;align-items:center;padding:8px 12px;background:#1e40af;color:white;position:sticky;top:0;z-index:300;}
+header img{height:40px;width:auto;border-radius:6px;}
+.nav-btn,.auth-btn{padding:3px 6px;border-radius:6px;font-weight:600;cursor:pointer;transition:transform 0.2s;font-size:12px;}
+.nav-btn:hover,.auth-btn:hover{transform:scale(1.05);}
+.notice-ticker{background:#dc2626;color:white;font-weight:600;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:52px;z-index:250;}
+.ticker-text{display:inline-block;padding-left:100%;animation:scrollNotice 10s linear infinite;}
+@keyframes scrollNotice{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
+.headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;}
+.posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:8px;margin-top:10px;}
+.card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(2,6,23,0.06);cursor:pointer;transition:transform 0.2s;}
 .card:hover{transform:scale(1.02);}
-.card img{width:100%;height:auto;object-fit:contain;cursor:zoom-in;transition:transform 0.3s;}
+.card-img{width:100%;height:auto;object-fit:contain;}
 .card-body{padding:8px;}
 .card-body h3{font-weight:700;font-size:18px;margin-bottom:4px;}
 .card-body p{font-size:14px;color:#555;margin-bottom:6px;}
 .editor{padding:12px;background:#fff;margin:6px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
 .editor input,.editor textarea{border:1px solid #ccc;border-radius:6px;padding:6px;margin-bottom:6px;width:100%;}
 .editor button{padding:6px 12px;margin-right:6px;border-radius:6px;background:#1e40af;color:white;cursor:pointer;}
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:400;overflow:hidden;}
-.modal{background:#fff;border-radius:10px;max-width:650px;width:90%;max-height:85%;overflow-y:auto;padding:16px;position:relative;}
-.modal img{max-width:100%;border-radius:10px;margin-bottom:6px;}
-.modal-close{position:absolute;top:10px;right:15px;background:#fff;border:none;border-radius:50%;padding:5px 10px;cursor:pointer;font-weight:bold;}
-.zoom-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);justify-content:center;align-items:center;z-index:9999;}
-.zoom-modal img{max-width:90%;max-height:90%;border-radius:10px;box-shadow:0 0 25px rgba(255,255,255,0.3);}
-.zoom-close{position:absolute;top:20px;right:30px;background:#fff;border:none;border-radius:50%;font-size:20px;padding:5px 10px;cursor:pointer;}
-/* Bottom bar */
-.bottom-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 4px;
-  background: linear-gradient(90deg, #1e3a8a, #2563eb);
-  box-shadow: 0 -4px 12px rgba(0,0,0,0.25);
-  z-index: 100000;
-}
-
-.bottom-bar button {
-  flex: 1;
-  margin: 0 4px;
-  background: #ffffff;
-  color: #1e3a8a;
-  font-weight: 700;
-  border: none;
-  border-radius: 8px;
-  padding: 5px 0;
-  cursor: pointer;
-  box-shadow: 0 4px 0 rgba(0,0,0,0.15);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.bottom-bar button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 6px rgba(0,0,0,0.2);
-}
-
-.bottom-bar button:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 0 rgba(0,0,0,0.15);
-}
-
-@media (max-width:600px){
-  .bottom-bar button { font-size: 12px; padding: 4px 0; }
-}
+#modalBg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:1000;}
+#modalContent{background:#fff;padding:12px;border-radius:8px;max-height:90vh;overflow-y:auto;width:90%;max-width:600px;}
 </style>
+
 </head>
 <body>
 
-<header>
-  <div class="flex items-center">
+<header class="flex justify-between items-center">
+  <div class="flex items-center space-x-2">
     <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo">
-    <h1 class="font-bold text-xl">Marathi Crime Files</h1>
+    <h1 class="font-bold text-base sm:text-lg">Marathi Crime Files</h1>
   </div>
-  <div class="header-buttons">
-    <button id="loginBtn" class="bg-green-500 text-white">Login</button>
-    <button id="logoutBtn" class="hidden bg-red-600 text-white">Logout</button>
+  <div class="relative">
+    <button onclick="toggleMenu()" class="nav-btn">☰ Menu</button>
+    <div id="menuList" class="hidden absolute right-0 mt-1 bg-white text-blue-900 rounded-md shadow-lg overflow-hidden z-[10000]">
+      <button class="dropdown-btn">Story</button>
+      <button class="dropdown-btn">Gumshuda</button>
+      <button class="dropdown-btn">Lawarish</button>
+      <button class="dropdown-btn">Crime</button>
+    </div>
+  </div>
+  <div class="flex space-x-1">
+    <button id="loginBtn" class="auth-btn bg-green-500 text-white">Login</button>
+    <button id="logoutBtn" class="auth-btn bg-red-600 text-white hidden">Logout</button>
   </div>
 </header>
 
 <div class="notice-ticker"><span class="ticker-text" id="noticeText"></span></div>
-<div class="headline-ticker"><span class="ticker-text" id="headlineText"></span></div>
-
-<section id="postsArea" class="posts-grid"></section>
-
-<section id="noticeEditor" class="editor hidden">
-  <h2>📰 Admin Notice</h2>
-  <input id="noticeInput" placeholder="Enter notice text...">
-  <button id="saveNoticeBtn">Save</button>
-</section>
+<div class="headline-ticker"><span id="headlineText"></span></div>
 
 <section id="editorArea" class="editor hidden">
   <h2>🖋️ Admin: Create/Edit News</h2>
@@ -348,25 +229,16 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
   <button id="publishBtn">Publish</button>
 </section>
 
-<!-- Zoom modal -->
-<div id="zoomModal" class="zoom-modal" aria-hidden="true">
-  <button class="zoom-close" aria-label="Close zoom">X</button>
-  <img id="zoomImg" alt="Zoomed image">
-</div>
+<section id="postsArea" class="posts-grid"></section>
+
+<section id="noticeEditor" class="editor hidden">
+  <h2>📰 Admin Notice</h2>
+  <input id="noticeInput" placeholder="Enter notice text...">
+  <button id="saveNoticeBtn">Save Notice</button>
+</section>
 
 <!-- Modal -->
-<div id="modalBg" class="modal-bg">
-  <div class="modal" id="modalContent">
-    <button class="modal-close" id="modalClose">X</button>
-  </div>
-</div>
-
-<!-- Bottom bar -->
-<footer class="bottom-bar" role="contentinfo" aria-label="Bottom navigation">
-  <button onclick="location.href='#about'"><span>🛈</span> About</button>
-  <button onclick="location.href='#contact'"><span>✉️</span> Contact</button>
-  <button onclick="location.href='#privacy'"><span>🔒</span> Privacy</button>
-</footer>
+<div id="modalBg"><div id="modalContent"></div></div>
 
 </body>
 </html>
