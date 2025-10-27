@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>मराठी क्राइम फाईल्स</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyCLCUAiPz-sqhFDskG9g9AwyUI1RdTQWfk",
+  authDomain: "marathi-crime-files.firebaseapp.com",
+  projectId: "marathi-crime-files",
+  storageBucket: "marathi-crime-files.appspot.com",
+  messagingSenderId: "973325762370",
+  appId: "1:973325762370:web:4fb97306806bbe6cc0d2db"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+const ADMIN_EMAIL = "gulistankh2011@gmail.com";
+
+// DOM Elements
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const editorArea = document.getElementById("editorArea");
+const noticeEditor = document.getElementById("noticeEditor");
+const postsArea = document.getElementById("postsArea");
+const blocksList = document.getElementById("blocksList");
+const aTitle = document.getElementById("aTitle");
+const aCat = document.getElementById("aCat");
+const noticeInput = document.getElementById("noticeInput");
+const noticeText = document.getElementById("noticeText");
+const headlineText = document.getElementById("headlineText");
+const modalBg = document.getElementById("modalBg");
+const modalContent = document.getElementById("modalContent");
+
+// Carousel Elements
+const carouselInput = document.getElementById("carouselInput");
+const saveCarouselBtn = document.getElementById("saveCarouselBtn");
+const carouselInner = document.getElementById("carouselInner");
+
+let carouselImages = [];
+let currentIndex = 0;
+let carouselInterval;
+
+// Login / Logout
+loginBtn.onclick = () => signInWithPopup(auth, provider).catch(e => alert(e.message));
+logoutBtn.onclick = () => signOut(auth);
+
+// On Auth Change
+onAuthStateChanged(auth, (user) => {
+  if (user && user.email === ADMIN_EMAIL) {
+    editorArea.classList.remove("hidden");
+    noticeEditor.classList.remove("hidden");
+    document.getElementById("carouselEditor").classList.remove("hidden");
+    loginBtn.classList.add("hidden");
+    logoutBtn.classList.remove("hidden");
+  } else {
+    editorArea.classList.add("hidden");
+    noticeEditor.classList.add("hidden");
+    document.getElementById("carouselEditor").classList.add("hidden");
+    loginBtn.classList.remove("hidden");
+    logoutBtn.classList.add("hidden");
+  }
+});
+
+// Add Text Block
+document.getElementById("addTextBtn").onclick = () => {
+  const t = document.createElement("textarea");
+  t.placeholder = "Write paragraph...";
+  t.dataset.type = "text";
+  t.className = "border p-2 w-full mb-2 rounded";
+  blocksList.appendChild(t);
+};
+
+// Add Image Block
+document.getElementById("addImageBtn").onclick = () => {
+  const inp = document.createElement("input");
+  inp.type = "file";
+  inp.dataset.type = "image";
+  inp.className = "w-full mb-2";
+  blocksList.appendChild(inp);
+};
+
+// Publish News
+document.getElementById("publishBtn").onclick = async () => {
+  const title = aTitle.value.trim();
+  const cat = aCat.value.trim();
+  if (!title) return alert("Enter title!");
+
+  const blocks = [];
+  for (const el of blocksList.children) {
+    if (el.dataset.type === "text" && el.value.trim())
+      blocks.push({ type: "text", text: el.value.trim() });
+    else if (el.type === "file" && el.files.length > 0) {
+      const formData = new FormData();
+      formData.append("image", el.files[0]);
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=2387b6e1ec3474b6df29aaa462344077`, { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.data?.url) blocks.push({ type: "image", url: data.data.url });
+    }
+  }
+
+  if (blocks.length === 0) return alert("Add some content!");
+
+  await addDoc(collection(db, "news"), {
+    title,
+    category: cat || "General",
+    blocks,
+    time: Date.now()
+  });
+
+  aTitle.value = "";
+  aCat.value = "";
+  blocksList.innerHTML = "";
+  alert("News Published!");
+};
+
+// Load and Render Posts
+onSnapshot(query(collection(db, "news"), orderBy("time", "desc")), (snap) => {
+  const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderPosts(posts);
+});
+
+function renderPosts(posts) {
+  postsArea.innerHTML = "";
+  posts.forEach(post => {
+    const firstImg = post.blocks.find(b => b.type === "image")?.url || "https://via.placeholder.com/300x200?text=No+Image";
+    const firstText = post.blocks.find(b => b.type === "text")?.text?.substring(0, 80) || "";
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <img src="${firstImg}" class="card-img">
+      <div class="card-body">
+        <h3>${post.title}</h3>
+        <p>${firstText}...</p>
+      </div>`;
+    card.onclick = () => showModal(post);
+    postsArea.appendChild(card);
+  });
+
+  headlineText.textContent = posts.slice(0, 5).map(p => p.title).join(" — ");
+}
+
+// Show Modal
+function showModal(post) {
+  modalContent.innerHTML = `<h2 class='text-lg font-bold mb-2'>${post.title}</h2>`;
+  post.blocks.forEach(b => {
+    if (b.type === "text") modalContent.innerHTML += `<p class='mb-2 text-gray-800'>${b.text}</p>`;
+    else modalContent.innerHTML += `<img src='${b.url}' class='w-full mb-2 rounded'>`;
+  });
+
+  // Delete button for Admin
+  const user = auth.currentUser;
+  if (user && user.email === ADMIN_EMAIL) {
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "❌ Delete News";
+    delBtn.className = "bg-red-600 text-white p-2 rounded mt-2";
+    delBtn.onclick = async () => {
+      if (confirm("Delete this news?")) {
+        await deleteDoc(doc(db, "news", post.id));
+        modalBg.style.display = "none";
+      }
+    };
+    modalContent.appendChild(delBtn);
+  }
+
+  modalBg.style.display = "flex";
+}
+
+// Close Modal
+modalBg.onclick = (e) => {
+  if (e.target === modalBg) modalBg.style.display = "none";
+};
+
+// Menu Toggle
+window.toggleMenu = function () {
+  document.getElementById("menuList").classList.toggle("hidden");
+};
+
+// Notice Update
+document.getElementById("saveNoticeBtn").onclick = async () => {
+  const text = noticeInput.value.trim();
+  if (!text) return alert("Enter notice text!");
+  await setDoc(doc(db, "settings", "notice"), { text, time: Date.now() });
+  noticeInput.value = "";
+};
+
+// Live Notice Scroll
+onSnapshot(doc(db, "settings", "notice"), (snap) => {
+  if (snap.exists()) {
+    noticeText.textContent = snap.data().text;
+  }
+});
+
+// Carousel Upload & Animation
+saveCarouselBtn.onclick = async () => {
+  const files = carouselInput.files;
+  if (!files.length) return alert("Select images!");
+  const urls = [];
+  for (const file of files) {
+    const formData = new FormData();
+    formData.append("image", file);
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=2387b6e1ec3474b6df29aaa462344077`, { method: "POST", body: formData });
+    const data = await res.json();
+    if (data.data?.url) urls.push(data.data.url);
+  }
+  await setDoc(doc(db, "settings", "carousel"), { images: urls, time: Date.now() });
+  alert("Carousel Images Saved!");
+};
+
+// Load Carousel
+onSnapshot(doc(db, "settings", "carousel"), (snap) => {
+  if (snap.exists()) {
+    carouselImages = snap.data().images || [];
+    carouselInner.innerHTML = "";
+    carouselImages.forEach(url => {
+      const img = document.createElement("img");
+      img.src = url;
+      carouselInner.appendChild(img);
+    });
+    currentIndex = 0;
+    if (carouselInterval) clearInterval(carouselInterval);
+    if (carouselImages.length > 1) {
+      carouselInterval = setInterval(() => {
+        currentIndex = (currentIndex + 1) % carouselImages.length;
+        carouselInner.style.transform = `translateX(-${currentIndex * 100}%)`;
+      }, 4000);
+    }
+  }
+});
+</script>
+
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#f6f7fb;color:#0b2540;}
+header{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#1e40af;color:white;position:sticky;top:0;z-index:300;}
+header img{height:40px;width:auto;border-radius:6px;}
+.nav-btn,.auth-btn{padding:3px 6px;border-radius:6px;font-weight:600;cursor:pointer;transition:transform 0.2s;font-size:12px;}
+.nav-btn:hover,.auth-btn:hover{transform:scale(1.05);}
+.notice-ticker{background:#dc2626;color:white;font-weight:600;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:52px;z-index:250;}
+.headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;}
+.posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:8px;margin-top:10px;}
+.card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(2,6,23,0.06);cursor:pointer;transition:transform 0.2s;}
+.card:hover{transform:scale(1.02);}
+.card-img{width:100%;height:auto;object-fit:contain;}
+.card-body{padding:8px;}
+.editor{padding:12px;background:#fff;margin:6px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+#modalBg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:1000;}
+#modalContent{background:#fff;padding:12px;border-radius:8px;max-height:90vh;overflow-y:auto;width:90%;max-width:600px;}
+.notice-ticker span,.headline-ticker span{display:inline-block;white-space:nowrap;animation:scroll-left 18s linear infinite;}
+@keyframes scroll-left{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
+.notice-ticker span:hover,.headline-ticker span:hover{animation-play-state:paused;}
+button{border:none;border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer;transition:all 0.2s ease;color:white;}
+#loginBtn{background:linear-gradient(135deg,#22c55e,#10b981);}
+#logoutBtn{background:linear-gradient(135deg,#ef4444,#f87171);}
+#saveNoticeBtn{background:linear-gradient(135deg,#f59e0b,#fbbf24);}
+#addTextBtn{background:linear-gradient(135deg,#3b82f6,#60a5fa);}
+#addImageBtn{background:linear-gradient(135deg,#8b5cf6,#a78bfa);}
+#publishBtn{background:linear-gradient(135deg,#22d3ee,#06b6d4);}
+body{padding-bottom:50px;}
+
+/* Carousel Styles */
+#imageCarousel{width:100%;height:250px;overflow:hidden;position:relative;border-radius:10px;margin-bottom:10px;}
+#carouselInner{display:flex;transition:transform 1s ease-in-out;height:100%;}
+#carouselInner img{flex-shrink:0;width:100%;height:100%;object-fit:cover;}
+@media (max-width:640px){#imageCarousel{height:180px;}}
+</style>
+</head>
+<body>
+
+<!-- Carousel -->
+<section id="carouselEditor" class="editor hidden mb-4">
+  <h2>📸 Admin: Upload Carousel Images</h2>
+  <input id="carouselInput" type="file" multiple>
+  <button id="saveCarouselBtn">Save Carousel</button>
+</section>
+<div id="imageCarousel"><div id="carouselInner"></div></div>
+
+<header>
+  <div class="flex items-center space-x-2">
+    <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo">
+    <h1 class="font-bold text-base sm:text-lg">मराठी क्राइम फाईल्स</h1>
+  </div>
+  <div class="relative">
+    <button onclick="toggleMenu()" class="nav-btn">☰ Menu</button>
+    <div id="menuList" class="hidden absolute right-0 mt-1 bg-white text-blue-900 rounded-md shadow-lg overflow-hidden z-[10000]">
+      <a href="story.html" class="block px-3 py-1 hover:bg-blue-100">Story</a>
+      <a href="gumshuda.html" class="block px-3 py-1 hover:bg-blue-100">Gumshuda</a>
+      <a href="lawarish.html" class="block px-3 py-1 hover:bg-blue-100">Lawarish</a>
+      <a href="crime.html" class="block px-3 py-1 hover:bg-blue-100">Crime</a>
+    </div>
+  </div>
+  <div class="flex space-x-1">
+    <button id="loginBtn" class="auth-btn bg-green-500 text-white">Login</button>
+    <button id="logoutBtn" class="auth-btn bg-red-600 text-white hidden">Logout</button>
+  </div>
+</header>
+
+<div class="notice-ticker"><span id="noticeText">Loading notice...</span></div>
+<div class="headline-ticker"><span id="headlineText">Loading headlines...</span></div>
+
+<section id="editorArea" class="editor hidden">
+  <h2>🖋️ Admin: Create/Edit News</h2>
+  <input id="aTitle" placeholder="Title">
+  <input id="aCat" placeholder="Category">
+  <div id="blocksList"></div>
+  <button id="addTextBtn">Add Text</button>
+  <button id="addImageBtn">Add Image</button>
+  <button id="publishBtn">Publish</button>
+</section>
+
+<section id="postsArea" class="posts-grid"></section>
+
+<section id="noticeEditor" class="editor hidden">
+  <h2>📰 Admin Notice</h2>
+  <input id="noticeInput" placeholder="Enter notice text...">
+  <button id="saveNoticeBtn">Save Notice</button>
+</section>
+
+<!-- Modal -->
+<div id="modalBg"><div id="modalContent"></div></div>
+
+
+
+<!-- Animated Footer Strip -->
+<footer class="fixed bottom-0 w-full flex justify-center items-center space-x-2 py-1 z-50 animated-footer">
+  <a href="about.html" class="footer-btn">About</a>
+  <a href="contact.html" class="footer-btn">Contact</a>
+  <a href="privacy.html" class="footer-btn">Privacy</a>
+  <a href="terms.html" class="footer-btn">T&C</a>
+</footer>
+
+<style>
+.animated-footer {
+  background: linear-gradient(135deg,#1f2937,#111827,#1f2937);
+  background-size: 400% 400%;
+  animation: gradientShift 8s ease infinite;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+@keyframes gradientShift {
+  0% {background-position:0% 50%;}
+  50% {background-position:100% 50%;}
+  100% {background-position:0% 50%;}
+}
+
+.footer-btn {
+  display: inline-block;
+  text-decoration: none;
+  color: white;
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.3), -1px -1px 3px rgba(255,255,255,0.05);
+  transition: all 0.2s ease-in-out;
+  text-align: center;
+}
+
+.footer-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 2px 4px 6px rgba(0,0,0,0.4), -2px -2px 6px rgba(255,255,255,0.1);
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  0% {transform: translateY(-2px) scale(1.05);}
+  100% {transform: translateY(-2px) scale(1.1);}
+}
+
+@media (max-width:640px){
+  .footer-btn {
+    font-size:9px;
+    padding:2px 4px;
+  }
+}
+</style>
+
+
+
+  
+</body>
+</html>
