@@ -42,12 +42,14 @@ const headlineText = document.getElementById("headlineText");
 const modalBg = document.getElementById("modalBg");
 const modalContent = document.getElementById("modalContent");
 
-// Carousel DOM
-const carouselEditor = document.getElementById("carouselEditor");
-const carouselBlocksList = document.getElementById("carouselBlocksList");
-const addCarouselImageBtn = document.getElementById("addCarouselImageBtn");
+// Carousel Elements
+const carouselInput = document.getElementById("carouselInput");
 const saveCarouselBtn = document.getElementById("saveCarouselBtn");
 const carouselInner = document.getElementById("carouselInner");
+
+let carouselImages = [];
+let currentIndex = 0;
+let carouselInterval;
 
 // Login / Logout
 loginBtn.onclick = () => signInWithPopup(auth, provider).catch(e => alert(e.message));
@@ -58,13 +60,13 @@ onAuthStateChanged(auth, (user) => {
   if (user && user.email === ADMIN_EMAIL) {
     editorArea.classList.remove("hidden");
     noticeEditor.classList.remove("hidden");
-    carouselEditor.classList.remove("hidden");
+    document.getElementById("carouselEditor").classList.remove("hidden");
     loginBtn.classList.add("hidden");
     logoutBtn.classList.remove("hidden");
   } else {
     editorArea.classList.add("hidden");
     noticeEditor.classList.add("hidden");
-    carouselEditor.classList.add("hidden");
+    document.getElementById("carouselEditor").classList.add("hidden");
     loginBtn.classList.remove("hidden");
     logoutBtn.classList.add("hidden");
   }
@@ -156,6 +158,7 @@ function showModal(post) {
     else modalContent.innerHTML += `<img src='${b.url}' class='w-full mb-2 rounded'>`;
   });
 
+  // Delete button for Admin
   const user = auth.currentUser;
   if (user && user.email === ADMIN_EMAIL) {
     const delBtn = document.createElement("button");
@@ -198,69 +201,41 @@ onSnapshot(doc(db, "settings", "notice"), (snap) => {
   }
 });
 
-
-// ========================
-// Carousel Admin + Frontend
-// ========================
-
-// Add carousel image input
-addCarouselImageBtn.onclick = () => {
-  const inp = document.createElement("input");
-  inp.type = "file";
-  inp.dataset.type = "image";
-  inp.className = "w-full mb-2";
-  carouselBlocksList.appendChild(inp);
-};
-
-// Save carousel images to Firestore
+// --- Carousel Upload & Animation --- //
 saveCarouselBtn.onclick = async () => {
-  const images = [];
-  for (const el of carouselBlocksList.children) {
-    if (el.type === "file" && el.files.length > 0) {
-      const formData = new FormData();
-      formData.append("image", el.files[0]);
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=2387b6e1ec3474b6df29aaa462344077`, { method: "POST", body: formData });
-      const data = await res.json();
-      if (data.data?.url) images.push(data.data.url);
-    }
+  const files = carouselInput.files;
+  if (!files.length) return alert("Select images!");
+  const urls = [];
+  for (const file of files) {
+    const formData = new FormData();
+    formData.append("image", file);
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=2387b6e1ec3474b6df29aaa462344077`, { method: "POST", body: formData });
+    const data = await res.json();
+    if (data.data?.url) urls.push(data.data.url);
   }
-  if (images.length === 0) return alert("Add images!");
-  await setDoc(doc(db, "settings", "carousel"), { images, time: Date.now() });
-  carouselBlocksList.innerHTML = "";
-  alert("Carousel Updated!");
+  await setDoc(doc(db, "settings", "carousel"), { images: urls, time: Date.now() });
+  alert("Carousel Images Saved!");
 };
-
-// Render carousel front-end
-let currentIndex = 0;
-let carouselImages = [];
 
 onSnapshot(doc(db, "settings", "carousel"), (snap) => {
   if (snap.exists()) {
     carouselImages = snap.data().images || [];
-    renderCarousel();
+    carouselInner.innerHTML = "";
+    carouselImages.forEach(url => {
+      const img = document.createElement("img");
+      img.src = url;
+      carouselInner.appendChild(img);
+    });
+    currentIndex = 0;
+    if (carouselInterval) clearInterval(carouselInterval);
+    if (carouselImages.length > 1) {
+      carouselInterval = setInterval(() => {
+        currentIndex = (currentIndex + 1) % carouselImages.length;
+        carouselInner.style.transform = `translateX(-${currentIndex * 100}%)`;
+      }, 4000);
+    }
   }
 });
-
-function renderCarousel() {
-  carouselInner.innerHTML = "";
-  carouselImages.forEach(url => {
-    const img = document.createElement("img");
-    img.src = url;
-    img.className = "w-full h-48 object-cover flex-shrink-0";
-    carouselInner.appendChild(img);
-  });
-  currentIndex = 0;
-  startCarouselAnimation();
-}
-
-function startCarouselAnimation() {
-  if (carouselImages.length <= 1) return;
-  setInterval(() => {
-    currentIndex = (currentIndex + 1) % carouselImages.length;
-    const offset = -currentIndex * 100;
-    carouselInner.style.transform = `translateX(${offset}%)`;
-  }, 3000);
-}
 </script>
 
 <style>
@@ -269,6 +244,7 @@ header{display:flex;justify-content:space-between;align-items:center;padding:8px
 header img{height:40px;width:auto;border-radius:6px;}
 .nav-btn,.auth-btn{padding:3px 6px;border-radius:6px;font-weight:600;cursor:pointer;transition:transform 0.2s;font-size:12px;}
 .nav-btn:hover,.auth-btn:hover{transform:scale(1.05);}
+
 .notice-ticker{background:#dc2626;color:white;font-weight:600;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:52px;z-index:250;}
 .headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;}
 .posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:8px;margin-top:10px;}
@@ -279,12 +255,31 @@ header img{height:40px;width:auto;border-radius:6px;}
 .editor{padding:12px;background:#fff;margin:6px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
 #modalBg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:1000;}
 #modalContent{background:#fff;padding:12px;border-radius:8px;max-height:90vh;overflow-y:auto;width:90%;max-width:600px;}
-#imageCarousel{overflow:hidden;position:relative;}
-#carouselInner{display:flex;transition:transform 1s ease;}
+
+/* Auto-scrolling notice & headline tickers */
+.notice-ticker span,.headline-ticker span{display:inline-block;white-space:nowrap;animation:scroll-left 18s linear infinite;}
+@keyframes scroll-left{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
+.notice-ticker span:hover,.headline-ticker span:hover{animation-play-state:paused;}
+
+/* Buttons */
+button{border:none;border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer;transition:all 0.2s ease;color:white;}
+#loginBtn{background:linear-gradient(135deg,#22c55e,#10b981);}
+#logoutBtn{background:linear-gradient(135deg,#ef4444,#f87171);}
+#saveNoticeBtn{background:linear-gradient(135deg,#f59e0b,#fbbf24);}
+#addTextBtn{background:linear-gradient(135deg,#3b82f6,#60a5fa);}
+#addImageBtn{background:linear-gradient(135deg,#8b5cf6,#a78bfa);}
+#publishBtn{background:linear-gradient(135deg,#22d3ee,#06b6d4);}
+
+body{padding-bottom:50px;}
+
+/* Carousel Styles */
+#imageCarousel{width:100%;height:300px;overflow:hidden;position:relative;border-radius:10px;margin:10px 0;}
+#carouselInner{display:flex;transition:transform 1s ease-in-out;height:100%;}
+#carouselInner img{flex-shrink:0;width:100%;height:100%;object-fit:cover;}
 </style>
 </head>
-<body>
 
+<body>
 <header>
   <div class="flex items-center space-x-2">
     <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo">
@@ -308,17 +303,13 @@ header img{height:40px;width:auto;border-radius:6px;}
 <div class="notice-ticker"><span id="noticeText">Loading notice...</span></div>
 <div class="headline-ticker"><span id="headlineText">Loading headlines...</span></div>
 
-<!-- Carousel Frontend -->
-<div id="imageCarousel" class="w-full h-48 mt-2 rounded">
-  <div id="carouselInner"></div>
-</div>
-
-<section id="carouselEditor" class="editor hidden">
-  <h2>🖼️ Admin: Image Carousel</h2>
-  <div id="carouselBlocksList"></div>
-  <button id="addCarouselImageBtn">Add Image</button>
+<!-- Carousel -->
+<section id="carouselEditor" class="editor hidden mb-4">
+  <h2>📸 Admin: Upload Carousel Images</h2>
+  <input id="carouselInput" type="file" multiple>
   <button id="saveCarouselBtn">Save Carousel</button>
 </section>
+<div id="imageCarousel"><div id="carouselInner"></div></div>
 
 <section id="editorArea" class="editor hidden">
   <h2>🖋️ Admin: Create/Edit News</h2>
@@ -341,7 +332,7 @@ header img{height:40px;width:auto;border-radius:6px;}
 <!-- Modal -->
 <div id="modalBg"><div id="modalContent"></div></div>
 
-<!-- Footer -->
+<!-- Footer Start -->
 <footer class="fixed bottom-0 w-full bg-gray-900 text-white flex justify-center items-center p-2 z-50">
   <div class="flex space-x-2">
     <a href="contact.html" class="footer-btn">Contact</a>
@@ -351,5 +342,11 @@ header img{height:40px;width:auto;border-radius:6px;}
   </div>
 </footer>
 
+<style>
+.footer-btn{background:linear-gradient(145deg,#4f46e5,#4338ca);color:white;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;box-shadow:0 4px #372db5,0 4px 6px rgba(0,0,0,0.1);transition:all 0.2s ease;}
+.footer-btn:hover{transform:translateY(-2px);box-shadow:0 6px #372db5,0 6px 8px rgba(0,0,0,0.15);}
+.footer-btn:active{transform:translateY(2px);box-shadow:0 2px #372db5,0 2px 4px rgba(0,0,0,0.1);}
+@media (max-width: 640px){.footer-btn{padding:3px 6px;font-size:10px;}}
+</style>
 </body>
 </html>
