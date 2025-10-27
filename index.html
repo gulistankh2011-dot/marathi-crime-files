@@ -11,7 +11,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Firebase config
+// Firebase setup
 const firebaseConfig = {
   apiKey: "AIzaSyCLCUAiPz-sqhFDskG9g9AwyUI1RdTQWfk",
   authDomain: "marathi-crime-files.firebaseapp.com",
@@ -20,14 +20,13 @@ const firebaseConfig = {
   messagingSenderId: "973325762370",
   appId: "1:973325762370:web:4fb97306806bbe6cc0d2db"
 };
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 const ADMIN_EMAIL = "gulistankh2011@gmail.com";
 
-// DOM
+// DOM Elements
 const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const editorArea = document.getElementById("editorArea");
@@ -67,14 +66,14 @@ document.getElementById("addTextBtn").onclick = ()=>{
   t.dataset.type = "text";
   t.className = "border p-2 w-full mb-2 rounded";
   blocksList.appendChild(t);
-};
+}
 document.getElementById("addImageBtn").onclick = ()=>{
   const inp = document.createElement("input");
   inp.type = "file";
   inp.dataset.type = "image";
   inp.className = "w-full mb-2";
   blocksList.appendChild(inp);
-};
+}
 
 // Publish news
 document.getElementById("publishBtn").onclick = async()=>{
@@ -95,13 +94,12 @@ document.getElementById("publishBtn").onclick = async()=>{
   if(blocks.length===0) return alert("Add content!");
   await addDoc(collection(db,"news"),{title,category:cat,blocks,time:Date.now()});
   aTitle.value=aCat.value=""; blocksList.innerHTML="";
-};
+}
 
-// Load posts & render
+// Load posts
 onSnapshot(query(collection(db,"news"),orderBy("time","desc")),snap=>{
   const posts = snap.docs.map(d=>({id:d.id,...d.data()}));
   renderPosts(posts);
-  updateHeadlineTicker(posts);
 });
 
 // Render posts
@@ -112,10 +110,12 @@ function renderPosts(posts){
     const firstText = post.blocks.find(b=>b.type==="text")?.text.substring(0,80)+"..." || "";
     const card = document.createElement("div");
     card.className="card";
-    card.innerHTML = `<img src='${firstImg}' class='card-img'><div class='card-body'><h3>${post.title}</h3><p>${firstText}</p></div>`;
+    card.innerHTML = `<div class="card-img-wrapper"><img src='${firstImg}' class='card-img'></div>
+                      <div class='card-body'><h3>${post.title}</h3><p>${firstText}</p></div>`;
     card.onclick = ()=>showModal(post);
     postsArea.appendChild(card);
   });
+  startHeadlineTicker(posts);
 }
 
 // Modal
@@ -146,16 +146,17 @@ function showModal(post){
   modalBg.style.display="flex";
 }
 
-// Close modal on outside click
-modalBg.onclick = e=>{
-  if(e.target === modalBg) modalBg.style.display="none";
-};
+// Close modal on background click
+modalBg.onclick = (e)=>{
+  if(e.target===modalBg) modalBg.style.display="none";
+}
 
 // Menu toggle
 function toggleMenu(){document.getElementById("menuList").classList.toggle("hidden");}
 
-// Save notice
+// 🔹 Notice Save
 const saveNoticeBtn = document.getElementById("saveNoticeBtn");
+
 saveNoticeBtn.onclick = async () => {
   const text = noticeInput.value.trim();
   if(!text) return alert("Enter notice text!");
@@ -163,28 +164,37 @@ saveNoticeBtn.onclick = async () => {
     await setDoc(doc(db, "settings", "notice"), { text, time: Date.now() });
     alert("Notice saved!");
     noticeInput.value = "";
-  } catch (e) { alert("Error: "+e.message); }
+  } catch (e) {
+    alert("Error saving notice: " + e.message);
+  }
 };
 
-// Live notice ticker
-const noticeRef = doc(db,"settings","notice");
-onSnapshot(noticeRef, snap=>{
+// 🔹 Notice Live Scroll
+const noticeRef = doc(db, "settings", "notice");
+onSnapshot(noticeRef, snap => {
   const ticker = document.querySelector(".ticker-text");
-  if(snap.exists()){
+  if (snap.exists()) {
     noticeText.textContent = snap.data().text;
-    ticker.style.animation = "none"; void ticker.offsetWidth;
-    ticker.style.animation = "scrollTicker 15s linear infinite";
-  } else { noticeText.textContent=""; }
+    ticker.style.animation = "none";
+    void ticker.offsetWidth; 
+    ticker.style.animation = "scrollNotice 15s linear infinite";
+  } else {
+    noticeText.textContent = "";
+  }
 });
 
-// Headline ticker
-function updateHeadlineTicker(posts){
-  const headlineElem = document.getElementById("headlineText");
-  headlineElem.textContent = posts.slice(0,10).map(p=>p.title).join(" — ");
-  headlineElem.style.animation = "none"; void headlineElem.offsetWidth;
-  headlineElem.style.animation = "scrollTicker 15s linear infinite";
+// Headline Ticker
+let headlineInterval;
+function startHeadlineTicker(posts){
+  const headlineEl = document.getElementById("headlineText");
+  let idx=0;
+  if(headlineInterval) clearInterval(headlineInterval);
+  headlineInterval = setInterval(()=>{
+    if(posts.length===0) return;
+    headlineEl.textContent = posts[idx].title;
+    idx = (idx+1) % posts.length;
+  },3000);
 }
-
 </script>
 
 <style>
@@ -193,18 +203,15 @@ header{display:flex;justify-between;align-items:center;padding:8px 12px;backgrou
 header img{height:40px;width:auto;border-radius:6px;}
 .nav-btn,.auth-btn{padding:3px 6px;border-radius:6px;font-weight:600;cursor:pointer;transition:transform 0.2s;font-size:12px;}
 .nav-btn:hover,.auth-btn:hover{transform:scale(1.05);}
-.notice-ticker, .headline-ticker{
-  background:#dc2626;color:white;font-weight:600;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:52px;z-index:250;
-}
-.ticker-text, .headline-text-inner{
-  display:inline-block;padding-left:100%;white-space:nowrap;
-  animation:scrollTicker 15s linear infinite;
-}
-@keyframes scrollTicker{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
+.notice-ticker{background:#dc2626;color:white;font-weight:600;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:52px;z-index:250;}
+.ticker-text{display:inline-block;padding-left:100%;animation:scrollNotice 15s linear infinite;}
+@keyframes scrollNotice{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
+.headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;}
 .posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:8px;margin-top:10px;}
 .card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(2,6,23,0.06);cursor:pointer;transition:transform 0.2s;position:relative;}
 .card:hover{transform:scale(1.02);}
-.card-img{width:100%;height:auto;object-fit:contain;display:block;}
+.card-img-wrapper{width:100%;height:200px;overflow:hidden;border-bottom:1px solid #ccc;}
+.card-img{width:100%;height:100%;object-fit:cover;display:block;}
 .card-body{padding:8px;}
 .card-body h3{font-weight:700;font-size:18px;margin-bottom:4px;}
 .card-body p{font-size:14px;color:#555;margin-bottom:6px;}
@@ -239,7 +246,7 @@ header img{height:40px;width:auto;border-radius:6px;}
 </header>
 
 <div class="notice-ticker"><span class="ticker-text" id="noticeText"></span></div>
-<div class="headline-ticker"><span class="headline-text-inner" id="headlineText"></span></div>
+<div class="headline-ticker"><span id="headlineText"></span></div>
 
 <section id="editorArea" class="editor hidden">
   <h2>🖋️ Admin: Create/Edit News</h2>
@@ -259,6 +266,7 @@ header img{height:40px;width:auto;border-radius:6px;}
   <button id="saveNoticeBtn">Save Notice</button>
 </section>
 
+<!-- Modal -->
 <div id="modalBg"><div id="modalContent"></div></div>
 
 </body>
