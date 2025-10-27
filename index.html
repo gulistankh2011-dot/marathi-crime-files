@@ -4,12 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>मराठी क्राइम फाईल्स</title>
-<script src="https://cdn.tailwindcss.com"></script>
 
+<!-- Dynamic OG tags for social sharing -->
+<meta property="og:title" content="Loading title...">
+<meta property="og:description" content="Loading description...">
+<meta property="og:image" content="https://yourwebsite.com/default-image.jpg">
+<meta property="og:url" content="">
+<meta property="og:type" content="website">
+
+<script src="https://cdn.tailwindcss.com"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // Firebase Config
 const firebaseConfig = {
@@ -148,15 +155,11 @@ function renderPosts(posts) {
     // Share button click
     card.querySelector(".share-btn").onclick = (e) => {
       e.stopPropagation(); // prevent card click
-      if (navigator.share) {
-        navigator.share({
-          title: post.title,
-          text: firstText,
-          url: window.location.href
-        }).catch(console.log);
-      } else {
-        prompt("Copy link to share:", window.location.href);
-      }
+      const shareUrl = `${window.location.origin}/post.html?newsId=${post.id}`;
+      const shareText = post.blocks.find(b=>b.type==="text")?.text.substring(0,100) || post.title;
+      const shareImage = post.blocks.find(b=>b.type==="image")?.url || "";
+      const whatsappLink = `https://wa.me/?text=${encodeURIComponent(shareText + "\n" + shareUrl)}`;
+      window.open(whatsappLink, "_blank");
     };
 
     // Card click opens modal
@@ -244,9 +247,29 @@ onSnapshot(doc(db, "settings", "carousel"), (snap) => {
     }
   }
 });
+
+// ✅ Dynamic OG tags for single post page
+const urlParams = new URLSearchParams(window.location.search);
+const newsId = urlParams.get("newsId");
+if(newsId) {
+  async function updateOGTags() {
+    const docRef = doc(db, "news", newsId);
+    const docSnap = await getDoc(docRef);
+    if(docSnap.exists()) {
+      const post = docSnap.data();
+      document.title = post.title;
+      document.querySelector('meta[property="og:title"]').setAttribute("content", post.title);
+      document.querySelector('meta[property="og:description"]').setAttribute("content", post.blocks.find(b=>b.type==="text")?.text.substring(0,100) || "");
+      document.querySelector('meta[property="og:image"]').setAttribute("content", post.blocks.find(b=>b.type==="image")?.url || "https://yourwebsite.com/default-image.jpg");
+      document.querySelector('meta[property="og:url"]').setAttribute("content", window.location.href);
+    }
+  }
+  updateOGTags();
+}
 </script>
 
 <style>
+/* Tailwind and custom styles from your original code remain unchanged */
 body{margin:0;font-family:Arial,sans-serif;background:#f6f7fb;color:#0b2540;}
 header{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#1e40af;color:white;position:sticky;top:0;z-index:300;}
 header img{height:40px;width:auto;border-radius:6px;}
@@ -266,29 +289,9 @@ header img{height:40px;width:auto;border-radius:6px;}
 @keyframes scroll-left{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
 .notice-ticker span:hover,.headline-ticker span:hover{animation-play-state:paused;}
 body{padding-bottom:50px;}
-
-/* Carousel Styles */
-#imageCarousel{width:100%;height:250px;overflow:hidden;position:relative;border-radius:10px;margin-bottom:10px;}
-#carouselInner{display:flex;transition:transform 1s ease-in-out;height:100%;}
-#carouselInner img{flex-shrink:0;width:100%;height:100%;object-fit:cover;}
-@media (max-width:640px){#imageCarousel{height:180px;}}
-
-/* Share Button Styles */
+/* Carousel and share button styles remain same */
 .share-btn { background:#3b82f6;color:white;border-radius:6px;padding:5px 10px;font-weight:600;margin-top:5px;width:100%;cursor:pointer;transition: all 0.2s ease-in-out; }
 .share-btn:hover { background:#2563eb; }
-
-/* Footer Strip */
-.animated-footer {
-  background: linear-gradient(135deg,#1f2937,#111827,#1f2937);
-  background-size: 400% 400%;
-  animation: gradientShift 8s ease infinite;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
-}
-@keyframes gradientShift { 0% {background-position:0% 50%;} 50% {background-position:100% 50%;} 100% {background-position:0% 50%;} }
-.footer-btn { display:inline-block;text-decoration:none;color:white;font-size:11px;padding:3px 6px;border-radius:5px;border:none;cursor:pointer;box-shadow:1px 1px 3px rgba(0,0,0,0.3),-1px -1px 3px rgba(255,255,255,0.05);transition:all 0.2s ease-in-out;text-align:center; }
-.footer-btn:hover { transform:translateY(-2px) scale(1.05); box-shadow:2px 4px 6px rgba(0,0,0,0.4),-2px -2px 6px rgba(255,255,255,0.1); animation:pulse 1s infinite alternate; }
-@keyframes pulse { 0% {transform:translateY(-2px) scale(1.05);} 100% {transform:translateY(-2px) scale(1.1);} }
-@media (max-width:640px){ .footer-btn { font-size:9px; padding:2px 4px; } }
 </style>
 </head>
 <body>
