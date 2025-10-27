@@ -201,7 +201,7 @@ onSnapshot(doc(db, "settings", "notice"), (snap) => {
   }
 });
 
-// --- Carousel Upload & Animation --- //
+// Carousel Upload & Animation
 saveCarouselBtn.onclick = async () => {
   const files = carouselInput.files;
   if (!files.length) return alert("Select images!");
@@ -217,6 +217,7 @@ saveCarouselBtn.onclick = async () => {
   alert("Carousel Images Saved!");
 };
 
+// Load Carousel
 onSnapshot(doc(db, "settings", "carousel"), (snap) => {
   if (snap.exists()) {
     carouselImages = snap.data().images || [];
@@ -244,7 +245,6 @@ header{display:flex;justify-content:space-between;align-items:center;padding:8px
 header img{height:40px;width:auto;border-radius:6px;}
 .nav-btn,.auth-btn{padding:3px 6px;border-radius:6px;font-weight:600;cursor:pointer;transition:transform 0.2s;font-size:12px;}
 .nav-btn:hover,.auth-btn:hover{transform:scale(1.05);}
-
 .notice-ticker{background:#dc2626;color:white;font-weight:600;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:52px;z-index:250;}
 .headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;}
 .posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:8px;margin-top:10px;}
@@ -255,13 +255,9 @@ header img{height:40px;width:auto;border-radius:6px;}
 .editor{padding:12px;background:#fff;margin:6px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
 #modalBg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:1000;}
 #modalContent{background:#fff;padding:12px;border-radius:8px;max-height:90vh;overflow-y:auto;width:90%;max-width:600px;}
-
-/* Auto-scrolling notice & headline tickers */
 .notice-ticker span,.headline-ticker span{display:inline-block;white-space:nowrap;animation:scroll-left 18s linear infinite;}
 @keyframes scroll-left{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
 .notice-ticker span:hover,.headline-ticker span:hover{animation-play-state:paused;}
-
-/* Buttons */
 button{border:none;border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer;transition:all 0.2s ease;color:white;}
 #loginBtn{background:linear-gradient(135deg,#22c55e,#10b981);}
 #logoutBtn{background:linear-gradient(135deg,#ef4444,#f87171);}
@@ -269,17 +265,25 @@ button{border:none;border-radius:8px;padding:8px 14px;font-weight:600;cursor:poi
 #addTextBtn{background:linear-gradient(135deg,#3b82f6,#60a5fa);}
 #addImageBtn{background:linear-gradient(135deg,#8b5cf6,#a78bfa);}
 #publishBtn{background:linear-gradient(135deg,#22d3ee,#06b6d4);}
-
 body{padding-bottom:50px;}
 
 /* Carousel Styles */
-#imageCarousel{width:100%;height:300px;overflow:hidden;position:relative;border-radius:10px;margin:10px 0;}
+#imageCarousel{width:100%;height:250px;overflow:hidden;position:relative;border-radius:10px;margin-bottom:10px;}
 #carouselInner{display:flex;transition:transform 1s ease-in-out;height:100%;}
 #carouselInner img{flex-shrink:0;width:100%;height:100%;object-fit:cover;}
+@media (max-width:640px){#imageCarousel{height:180px;}}
 </style>
 </head>
-
 <body>
+
+<!-- Carousel -->
+<section id="carouselEditor" class="editor hidden mb-4">
+  <h2>📸 Admin: Upload Carousel Images</h2>
+  <input id="carouselInput" type="file" multiple>
+  <button id="saveCarouselBtn">Save Carousel</button>
+</section>
+<div id="imageCarousel"><div id="carouselInner"></div></div>
+
 <header>
   <div class="flex items-center space-x-2">
     <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo">
@@ -303,14 +307,6 @@ body{padding-bottom:50px;}
 <div class="notice-ticker"><span id="noticeText">Loading notice...</span></div>
 <div class="headline-ticker"><span id="headlineText">Loading headlines...</span></div>
 
-<!-- Carousel -->
-<section id="carouselEditor" class="editor hidden mb-4">
-  <h2>📸 Admin: Upload Carousel Images</h2>
-  <input id="carouselInput" type="file" multiple>
-  <button id="saveCarouselBtn">Save Carousel</button>
-</section>
-<div id="imageCarousel"><div id="carouselInner"></div></div>
-
 <section id="editorArea" class="editor hidden">
   <h2>🖋️ Admin: Create/Edit News</h2>
   <input id="aTitle" placeholder="Title">
@@ -332,21 +328,5 @@ body{padding-bottom:50px;}
 <!-- Modal -->
 <div id="modalBg"><div id="modalContent"></div></div>
 
-<!-- Footer Start -->
-<footer class="fixed bottom-0 w-full bg-gray-900 text-white flex justify-center items-center p-2 z-50">
-  <div class="flex space-x-2">
-    <a href="contact.html" class="footer-btn">Contact</a>
-    <a href="about.html" class="footer-btn">About</a>
-    <a href="privacy.html" class="footer-btn">Privacy</a>
-    <a href="terms.html" class="footer-btn">T&C</a>
-  </div>
-</footer>
-
-<style>
-.footer-btn{background:linear-gradient(145deg,#4f46e5,#4338ca);color:white;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;box-shadow:0 4px #372db5,0 4px 6px rgba(0,0,0,0.1);transition:all 0.2s ease;}
-.footer-btn:hover{transform:translateY(-2px);box-shadow:0 6px #372db5,0 6px 8px rgba(0,0,0,0.15);}
-.footer-btn:active{transform:translateY(2px);box-shadow:0 2px #372db5,0 2px 4px rgba(0,0,0,0.1);}
-@media (max-width: 640px){.footer-btn{padding:3px 6px;font-size:10px;}}
-</style>
 </body>
 </html>
