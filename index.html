@@ -27,7 +27,7 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 const ADMIN_EMAIL = "gulistankh2011@gmail.com";
 
-// DOM Elements
+// DOM
 const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const editorArea = document.getElementById("editorArea");
@@ -43,9 +43,9 @@ const headlineText = document.getElementById("headlineText");
 let editingId = null;
 let currentPosts = [];
 
-// Login/Logout
-loginBtn.onclick = () => signInWithPopup(auth, provider).catch(e=>alert(e.message));
-logoutBtn.onclick = () => signOut(auth);
+// Login / Logout
+loginBtn.onclick = ()=>signInWithPopup(auth, provider).catch(e=>alert(e.message));
+logoutBtn.onclick = ()=>signOut(auth);
 
 onAuthStateChanged(auth,user=>{
   if(user && user.email===ADMIN_EMAIL){
@@ -109,7 +109,7 @@ onSnapshot(query(collection(db,"news"),orderBy("time","desc")),snap=>{
   renderPosts();
 });
 
-// Save Notice
+// Notice
 document.getElementById("saveNoticeBtn").onclick = async()=>{
   await setDoc(doc(db,"settings","notice"),{text:noticeInput.value.trim()});
 };
@@ -120,20 +120,25 @@ onSnapshot(doc(db,"settings","notice"),snap=>{
 // Render Posts
 function renderPosts(){
   postsArea.innerHTML="";
-  currentPosts.forEach((d,i)=>{
+  currentPosts.forEach(d=>{
     const firstImg = d.blocks.find(b=>b.type==="image")?.url || "https://via.placeholder.com/300x200?text=No+Image";
     const firstText = d.blocks.find(b=>b.type==="text")?.text.substring(0,80)+"..." || "";
     const card = document.createElement("div");
-    card.className="card cursor-pointer relative overflow-hidden rounded shadow-md";
-    card.innerHTML = `<img src="${firstImg}" class="card-img w-full h-48 object-cover"><div class="card-body p-2"><h3 class="font-bold text-base">${d.title}</h3><p class="text-sm text-gray-700">${firstText}</p></div>`;
+    card.className="card cursor-pointer bg-white rounded shadow overflow-hidden flex flex-col";
+    card.innerHTML = `
+      <div class="w-full aspect-video overflow-hidden"><img src="${firstImg}" class="w-full h-full object-contain"></div>
+      <div class="p-2 flex-1 flex flex-col justify-between">
+        <h3 class="font-bold text-base">${d.title}</h3>
+        <p class="text-sm text-gray-700 mt-1">${firstText}</p>
+      </div>
+    `;
     card.onclick = ()=>openModal(d);
     postsArea.appendChild(card);
   });
-
   headlineText.textContent=currentPosts.slice(0,5).map(p=>p.title).join(" — ");
 }
 
-// Open Modal
+// Modal
 function openModal(post){
   const modal = document.getElementById("postModal");
   document.getElementById("modalTitle").textContent = post.title;
@@ -141,35 +146,30 @@ function openModal(post){
   const textBlocks = document.getElementById("modalTextBlocks");
   const imgSlider = document.getElementById("modalImageSlider");
   textBlocks.innerHTML=""; imgSlider.innerHTML="";
-
   post.blocks.filter(b=>b.type==="text").forEach(t=>{
     const p = document.createElement("p"); p.textContent=t.text; p.className="mb-2"; textBlocks.appendChild(p);
   });
-
   const images = post.blocks.filter(b=>b.type==="image").map(b=>b.url);
   images.forEach((url,i)=>{
     const img = document.createElement("img");
     img.src = url;
-    img.className = "absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-500";
-    img.style.opacity = i===0?1:0;
+    img.className="absolute top-0 left-0 w-full h-full object-contain transition-opacity duration-500";
+    img.style.opacity=i===0?1:0;
     imgSlider.appendChild(img);
   });
-
-  let idx = 0;
+  let idx=0;
   if(images.length>1){
     setInterval(()=>{
       const imgs = imgSlider.querySelectorAll("img");
       imgs.forEach(img=>img.style.opacity=0);
       imgs[idx].style.opacity=1;
-      idx = (idx+1)%imgs.length;
+      idx=(idx+1)%imgs.length;
     },3000);
   }
-
   modal.classList.remove("hidden");
 }
 document.getElementById("closeModal").onclick = ()=>document.getElementById("postModal").classList.add("hidden");
 
-// Menu toggle
 function toggleMenu(){document.getElementById("menuList").classList.toggle("hidden");}
 
 </script>
@@ -181,11 +181,9 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 .nav-btn,.auth-btn{padding:4px 8px;border-radius:6px;font-weight:600;cursor:pointer;transition:transform 0.2s;}
 .nav-btn:hover,.auth-btn:hover{transform:scale(1.05);}
 .notice-ticker{background:#dc2626;color:white;font-weight:600;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:50px;z-index:300;}
-.ticker-text{display:inline-block;padding-left:100%;animation:scrollNotice 15s linear infinite;}
-@keyframes scrollNotice{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
 .headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:74px;z-index:300;}
 .posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:8px;margin-top:10px;}
-.card img{width:100%;height:150px;object-fit:cover;transition:transform 0.2s;}
+.card img{transition:transform 0.2s;}
 .card:hover img{transform:scale(1.05);}
 .editor{padding:12px;background:#fff;margin:6px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
 .editor input,.editor textarea{border:1px solid #ccc;border-radius:6px;padding:6px;margin-bottom:6px;width:100%;}
