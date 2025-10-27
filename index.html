@@ -11,7 +11,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Firebase setup
 const firebaseConfig = {
   apiKey: "AIzaSyCLCUAiPz-sqhFDskG9g9AwyUI1RdTQWfk",
   authDomain: "marathi-crime-files.firebaseapp.com",
@@ -20,13 +19,14 @@ const firebaseConfig = {
   messagingSenderId: "973325762370",
   appId: "1:973325762370:web:4fb97306806bbe6cc0d2db"
 };
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 const ADMIN_EMAIL = "gulistankh2011@gmail.com";
 
-// DOM Elements
+// DOM
 const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const editorArea = document.getElementById("editorArea");
@@ -41,7 +41,7 @@ const headlineText = document.getElementById("headlineText");
 const modalBg = document.getElementById("modalBg");
 const modalContent = document.getElementById("modalContent");
 
-// Login/Logout
+// Auth
 loginBtn.onclick = () => signInWithPopup(auth, provider).catch(e => alert(e.message));
 logoutBtn.onclick = () => signOut(auth);
 
@@ -96,11 +96,15 @@ document.getElementById("publishBtn").onclick = async() => {
   aTitle.value = aCat.value = ""; blocksList.innerHTML = "";
 }
 
-// Load posts
-onSnapshot(query(collection(db,"news"), orderBy("time","desc")), snap => {
-  const posts = snap.docs.map(d => ({id:d.id,...d.data()}));
-  renderPosts(posts);
-});
+// Load & filter posts by category
+function loadPosts(filterCat = null) {
+  onSnapshot(query(collection(db,"news"), orderBy("time","desc")), snap => {
+    let posts = snap.docs.map(d => ({id:d.id,...d.data()}));
+    if(filterCat) posts = posts.filter(p => p.category.toLowerCase() === filterCat.toLowerCase());
+    renderPosts(posts);
+  });
+}
+loadPosts();
 
 // Render posts
 function renderPosts(posts){
@@ -137,15 +141,24 @@ function showModal(post){
       modalContent.appendChild(delBtn);
     }
   });
-
   modalBg.style.display="flex";
 }
 
-// Close modal on background click
+// Close modal
 modalBg.onclick = (e) => { if(e.target === modalBg) modalBg.style.display="none"; }
 
 // Menu toggle
 function toggleMenu(){ document.getElementById("menuList").classList.toggle("hidden"); }
+window.toggleMenu = toggleMenu;
+
+// Category page links
+document.querySelectorAll(".dropdown-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    const cat = btn.textContent.trim();
+    loadPosts(cat);
+    document.getElementById("menuList").classList.add("hidden");
+  });
+});
 
 // Notice
 document.getElementById("saveNoticeBtn").onclick = async () => {
@@ -163,10 +176,9 @@ onSnapshot(noticeRef, snap => {
     const ticker = document.querySelector(".ticker-text");
     ticker.style.animation = "none";
     void ticker.offsetWidth;
-    ticker.style.animation = "scrollNotice 10s linear infinite";
+    ticker.style.animation = "scrollNotice 12s linear infinite";
   }
 });
-
 </script>
 
 <style>
@@ -176,7 +188,7 @@ header img{height:40px;width:auto;border-radius:6px;}
 .nav-btn,.auth-btn{padding:3px 6px;border-radius:6px;font-weight:600;cursor:pointer;transition:transform 0.2s;font-size:12px;}
 .nav-btn:hover,.auth-btn:hover{transform:scale(1.05);}
 .notice-ticker{background:#dc2626;color:white;font-weight:600;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:52px;z-index:250;}
-.ticker-text{display:inline-block;padding-left:100%;animation:scrollNotice 10s linear infinite;}
+.ticker-text{display:inline-block;padding-left:100%;animation:scrollNotice 12s linear infinite;}
 @keyframes scrollNotice{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
 .headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;}
 .posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:8px;margin-top:10px;}
@@ -191,11 +203,12 @@ header img{height:40px;width:auto;border-radius:6px;}
 .editor button{padding:6px 12px;margin-right:6px;border-radius:6px;background:#1e40af;color:white;cursor:pointer;}
 #modalBg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:1000;}
 #modalContent{background:#fff;padding:12px;border-radius:8px;max-height:90vh;overflow-y:auto;width:90%;max-width:600px;}
+.dropdown-btn{display:block;padding:8px 12px;width:100%;text-align:left;font-weight:600;}
+.dropdown-btn:hover{background:#1e3a8a;color:white;}
 </style>
-
 </head>
-<body>
 
+<body>
 <header class="flex justify-between items-center">
   <div class="flex items-center space-x-2">
     <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo">
@@ -237,8 +250,6 @@ header img{height:40px;width:auto;border-radius:6px;}
   <button id="saveNoticeBtn">Save Notice</button>
 </section>
 
-<!-- Modal -->
 <div id="modalBg"><div id="modalContent"></div></div>
-
 </body>
 </html>
