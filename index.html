@@ -343,5 +343,58 @@ button:active {
 <!-- Modal -->
 <div id="modalBg"><div id="modalContent"></div></div>
 
+
+
+<!-- Footer Start -->
+<footer class="fixed bottom-0 w-full bg-gray-900 text-white flex justify-center items-center p-2 z-50">
+  <div class="flex space-x-2">
+    <a href="contact.html" class="footer-btn">Contact</a>
+    <a href="about.html" class="footer-btn">About</a>
+    <a href="privacy.html" class="footer-btn">Privacy</a>
+    <a href="terms.html" class="footer-btn">T&C</a>
+  </div>
+</footer>
+
+<style>
+/* Footer 3D Buttons */
+.footer-btn {
+  background: linear-gradient(145deg,#4f46e5,#4338ca);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 4px #372db5, 0 4px 6px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+}
+
+.footer-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px #372db5, 0 6px 8px rgba(0,0,0,0.15);
+}
+
+.footer-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px #372db5, 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Responsive: small padding on small screens */
+@media (max-width: 640px) {
+  .footer-btn {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+}
+</style>
+<!-- Footer End -->
+
+
+
+
+
+
+
+  
 </body>
 </html>
