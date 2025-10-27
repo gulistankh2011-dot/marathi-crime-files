@@ -6,227 +6,214 @@
 <title>Marathi Crime Files</title>
 <script src="https://cdn.tailwindcss.com"></script>
 
-<!-- 🔹 Firebase -->
+<!-- Firebase -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// 🔹 Firebase Config
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCLCUAiPz-sqhFDskG9g9AwyUI1RdTQWfk",
+  authDomain: "marathi-crime-files.firebaseapp.com",
+  projectId: "marathi-crime-files",
+  storageBucket: "marathi-crime-files.appspot.com",
+  messagingSenderId: "973325762370",
+  appId: "1:973325762370:web:4fb97306806bbe6cc0d2db"
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+const ADMIN_EMAIL = "gulistankh2011@gmail.com";
 
-// 🟢 Load Notice
-const noticeRef = ref(db, "notice");
-onValue(noticeRef, (snap) => {
-  document.getElementById("noticeText").textContent = snap.val() || "";
+// DOM Elements
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const editorArea = document.getElementById("editorArea");
+const noticeEditor = document.getElementById("noticeEditor");
+const postsArea = document.getElementById("postsArea");
+const blocksList = document.getElementById("blocksList");
+const aTitle = document.getElementById("aTitle");
+const aCat = document.getElementById("aCat");
+const noticeInput = document.getElementById("noticeInput");
+const noticeText = document.getElementById("noticeText");
+const headlineText = document.getElementById("headlineText");
+
+let editingId = null;
+let currentPosts = [];
+
+// 🔹 Login
+loginBtn.onclick = ()=>signInWithPopup(auth, provider).catch(e=>alert(e.message));
+logoutBtn.onclick = ()=>signOut(auth);
+
+// 🔹 Auth state
+onAuthStateChanged(auth,user=>{
+  if(user && user.email===ADMIN_EMAIL){
+    editorArea.classList.remove("hidden");
+    noticeEditor.classList.remove("hidden");
+    loginBtn.classList.add("hidden");
+    logoutBtn.classList.remove("hidden");
+  } else {
+    editorArea.classList.add("hidden");
+    noticeEditor.classList.add("hidden");
+    loginBtn.classList.remove("hidden");
+    logoutBtn.classList.add("hidden");
+  }
 });
 
-// 🟢 Load Headline
-const headlineRef = ref(db, "headline");
-onValue(headlineRef, (snap) => {
-  document.getElementById("headlineText").textContent = snap.val() || "";
+// 🔹 Notice Save
+const noticeRef = doc(db,"settings","notice");
+document.getElementById("saveNoticeBtn").onclick = async()=>{
+  await setDoc(noticeRef,{text:noticeInput.value.trim()});
+}
+
+// 🔹 Load Notice
+onSnapshot(noticeRef,snap=>{
+  noticeText.textContent = snap.exists()?snap.data().text:"";
 });
 
-// 🟢 Load Posts
-const postsRef = ref(db, "posts");
-onValue(postsRef, (snap) => {
-  const postsArea = document.getElementById("postsArea");
-  postsArea.innerHTML = "";
-  snap.forEach((child) => {
-    const data = child.val();
-    const card = `
-      <div class="p-3 bg-white rounded-xl shadow hover:shadow-lg transition">
-        <img src="${data.image}" class="w-full h-40 object-cover rounded-md mb-2">
-        <h3 class="font-semibold text-sm">${data.title}</h3>
-        <p class="text-gray-700 text-xs">${data.desc}</p>
-      </div>`;
-    postsArea.innerHTML += card;
+// 🔹 Add Text/Image Blocks
+document.getElementById("addTextBtn").onclick = ()=>{
+  const t = document.createElement("textarea");
+  t.placeholder = "Write paragraph...";
+  t.dataset.type = "text";
+  t.className = "border p-2 w-full mb-2 rounded";
+  blocksList.appendChild(t);
+}
+document.getElementById("addImageBtn").onclick = ()=>{
+  const inp = document.createElement("input");
+  inp.type = "file";
+  inp.dataset.type = "image";
+  inp.className = "w-full mb-2";
+  blocksList.appendChild(inp);
+}
+
+// 🔹 Publish News
+document.getElementById("publishBtn").onclick = async()=>{
+  const title = aTitle.value.trim();
+  const cat = aCat.value.trim();
+  if(!title) return alert("Enter title!");
+  const blocks = [];
+  for(const el of blocksList.children){
+    if(el.dataset.type==="text" && el.value.trim()) blocks.push({type:"text",text:el.value.trim()});
+    else if(el.type==="file" && el.files.length>0){
+      // Upload image to imgbb
+      const formData = new FormData();
+      formData.append("image",el.files[0]);
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=2387b6e1ec3474b6df29aaa462344077`,{method:"POST",body:formData});
+      const data = await res.json();
+      if(data.data?.url) blocks.push({type:"image",url:data.data.url});
+    }
+  }
+  if(blocks.length===0) return alert("Add content!");
+  if(editingId){
+    await setDoc(doc(db,"news",editingId),{title,category:cat,blocks,time:Date.now()});
+    editingId=null;
+  } else {
+    await addDoc(collection(db,"news"),{title,category:cat,blocks,time:Date.now()});
+  }
+  aTitle.value=aCat.value=""; blocksList.innerHTML="";
+}
+
+// 🔹 Load Posts
+onSnapshot(query(collection(db,"news"),orderBy("time","desc")),snap=>{
+  currentPosts = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderPosts();
+});
+
+// 🔹 Render Posts
+function renderPosts(){
+  postsArea.innerHTML="";
+  currentPosts.forEach((d,i)=>{
+    const firstImg = d.blocks.find(b=>b.type==="image")?.url || "https://via.placeholder.com/300x200?text=No+Image";
+    const firstText = d.blocks.find(b=>b.type==="text")?.text.substring(0,80)+"..." || "";
+    const card = document.createElement("div");
+    card.className="card";
+    card.innerHTML = `<img src='${firstImg}' class='image-zoom'><div class='card-body'><h3>${d.title}</h3><p>${firstText}</p></div>`;
+    postsArea.appendChild(card);
   });
-});
 
-// 🟢 Load Banner Images
-const bannerRef = ref(db, "bannerImages");
-onValue(bannerRef, (snap) => {
-  const container = document.querySelector(".slider");
-  container.innerHTML = "";
-  snap.forEach((child) => {
-    const img = document.createElement("img");
-    img.src = child.val();
-    img.className = "slider-img";
-    container.appendChild(img);
-  });
-});
+  // Image slider animation
+  let idx = 0;
+  const sliderImgs = document.querySelectorAll(".image-zoom");
+  setInterval(()=>{
+    sliderImgs.forEach((img,i)=>img.style.display="none");
+    if(sliderImgs[idx]) sliderImgs[idx].style.display="block";
+    idx = (idx+1)%sliderImgs.length;
+  },3000);
+
+  // Headline ticker
+  headlineText.textContent=currentPosts.slice(0,5).map(p=>p.title).join(" — ");
+}
+
+// 🔹 Menu toggle
+function toggleMenu(){document.getElementById("menuList").classList.toggle("hidden");}
 </script>
 
 <style>
-body {
-  margin: 0;
-  padding-top: 55px;
-  font-family: 'Poppins', sans-serif;
-}
-
-/* 🔹 HEADER */
-header {
-  background: linear-gradient(90deg, #1e3a8a, #3b82f6);
-  color: white;
-  padding: 6px 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: fixed;
-  width: 100%;
-  top: 0;
-  z-index: 9999;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-}
-header img {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-}
-.nav-btn {
-  background: linear-gradient(180deg, #ffffff, #dbeafe);
-  color: #1e3a8a;
-  font-weight: 600;
-  border: none;
-  border-radius: 6px;
-  padding: 3px 6px;
-  box-shadow: 0 2px 0 #93c5fd;
-}
-.auth-btn {
-  font-size: 11px;
-  padding: 3px 6px;
-  border-radius: 6px;
-}
-
-/* 🔹 NOTICE + HEADLINE */
-.notice-ticker, .headline-ticker {
-  background: #fef3c7;
-  color: #7c2d12;
-  font-weight: 600;
-  overflow: hidden;
-  white-space: nowrap;
-  padding: 4px;
-  font-size: 13px;
-}
-.headline-ticker {
-  background: #e0f2fe;
-  color: #0c4a6e;
-}
-
-/* 🔹 Ticker Animation */
-.ticker-text {
-  display: inline-block;
-  padding-right: 50px;
-  animation: scroll 18s linear infinite;
-}
-@keyframes scroll {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
-}
-
-/* 🔹 POSTS GRID */
-.posts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 10px;
-  padding: 8px;
-}
-
-/* 🔹 SLIDER */
-.slider-container {
-  width: 100%;
-  height: 180px;
-  overflow: hidden;
-  position: relative;
-  background: #000;
-  margin-top: 6px;
-}
-.slider {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  animation: slide 20s infinite;
-}
-.slider-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-@keyframes slide {
-  0%, 25% { transform: translateX(0); }
-  30%, 55% { transform: translateX(-100%); }
-  60%, 85% { transform: translateX(-200%); }
-  90%, 100% { transform: translateX(0); }
-}
-
-/* 🔹 ADMIN NOTICE */
-.editor {
-  margin: 15px;
-  padding: 10px;
-  background: #f3f4f6;
-  border-radius: 8px;
-}
+body{margin:0;font-family:Arial,sans-serif;background:#f6f7fb;color:#0b2540;}
+header{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#1e40af;color:white;position:sticky;top:0;z-index:300;box-shadow:0 2px 5px rgba(0,0,0,0.2);}
+header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:cover;}
+.nav-btn, .auth-btn{padding:4px 8px;border-radius:6px;font-weight:600;cursor:pointer;transition:transform 0.2s;}
+.nav-btn:hover,.auth-btn:hover{transform:scale(1.05);}
+.notice-ticker{background:#1e3a8a;color:white;font-weight:600;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;}
+.headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;}
+.posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:8px;margin-top:10px;}
+.card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(2,6,23,0.06);cursor:pointer;transition:transform 0.2s;position:relative;}
+.card:hover{transform:scale(1.02);}
+.card img{width:100%;height:150px;object-fit:cover;display:block;}
+.card-body{padding:8px;}
+.card-body h3{font-weight:700;font-size:18px;margin-bottom:4px;}
+.card-body p{font-size:14px;color:#555;margin-bottom:6px;}
+.editor{padding:12px;background:#fff;margin:6px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+.editor input,.editor textarea{border:1px solid #ccc;border-radius:6px;padding:6px;margin-bottom:6px;width:100%;}
+.editor button{padding:6px 12px;margin-right:6px;border-radius:6px;background:#1e40af;color:white;cursor:pointer;}
 </style>
 </head>
-
 <body>
 
-<header>
+<header class="flex justify-between items-center">
   <div class="flex items-center space-x-2">
     <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo">
-    <h1 class="font-bold text-base">Marathi Crime Files</h1>
+    <h1 class="font-bold text-base sm:text-lg">Marathi Crime Files</h1>
   </div>
-
   <div class="relative">
-    <button onclick="toggleMenu()" class="nav-btn">☰</button>
-    <div id="menuList" class="hidden absolute right-0 mt-1 bg-white text-blue-900 rounded-md shadow-lg">
-      <button class="block w-full text-left px-3 py-1 hover:bg-blue-100">Story</button>
-      <button class="block w-full text-left px-3 py-1 hover:bg-blue-100">Gumshuda</button>
-      <button class="block w-full text-left px-3 py-1 hover:bg-blue-100">Lawarish</button>
-      <button class="block w-full text-left px-3 py-1 hover:bg-blue-100">Crime</button>
+    <button onclick="toggleMenu()" class="nav-btn">☰ Menu</button>
+    <div id="menuList" class="hidden absolute right-0 mt-1 bg-white text-blue-900 rounded-md shadow-lg overflow-hidden z-[10000]">
+      <button class="dropdown-btn">Story</button>
+      <button class="dropdown-btn">Gumshuda</button>
+      <button class="dropdown-btn">Lawarish</button>
+      <button class="dropdown-btn">Crime</button>
     </div>
   </div>
-
   <div class="flex space-x-1">
-    <button id="loginBtn" class="auth-btn bg-green-500">Login</button>
-    <button id="logoutBtn" class="auth-btn bg-red-600 hidden">Logout</button>
+    <button id="loginBtn" class="auth-btn bg-green-500 text-white">Login</button>
+    <button id="logoutBtn" class="auth-btn bg-red-600 text-white hidden">Logout</button>
   </div>
 </header>
 
-<!-- 🔹 NOTICE & HEADLINE -->
-<div class="notice-ticker"><span class="ticker-text" id="noticeText"></span></div>
-<div class="headline-ticker"><span class="ticker-text" id="headlineText"></span></div>
+<div class="notice-ticker"><span id="noticeText"></span></div>
+<div class="headline-ticker"><span id="headlineText"></span></div>
 
-<!-- 🔹 IMAGE SLIDER -->
-<div class="slider-container">
-  <div class="slider"></div>
-</div>
+<section id="editorArea" class="editor hidden">
+  <h2>🖋️ Admin: Create/Edit News</h2>
+  <input id="aTitle" placeholder="Title">
+  <input id="aCat" placeholder="Category">
+  <div id="blocksList"></div>
+  <button id="addTextBtn">Add Text</button>
+  <button id="addImageBtn">Add Image</button>
+  <button id="publishBtn">Publish</button>
+</section>
 
-<!-- 🔹 POSTS -->
 <section id="postsArea" class="posts-grid"></section>
 
-<!-- 🔹 ADMIN NOTICE -->
 <section id="noticeEditor" class="editor hidden">
   <h2>📰 Admin Notice</h2>
   <input id="noticeInput" placeholder="Enter notice text...">
-  <button id="saveNoticeBtn">Save</button>
+  <button id="saveNoticeBtn">Save Notice</button>
 </section>
-
-<script>
-function toggleMenu() {
-  document.getElementById('menuList').classList.toggle('hidden');
-}
-</script>
 
 </body>
 </html>
