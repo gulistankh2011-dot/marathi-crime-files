@@ -239,6 +239,36 @@ header img{height:40px;width:auto;border-radius:6px;}
   animation-play-state: paused;
 }
 
+/* 3D Style Buttons */
+button {
+  background: linear-gradient(145deg, #4f46e5, #4338ca); /* Gradient */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px #372db5, 0 6px 10px rgba(0,0,0,0.15);
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px #372db5, 0 8px 12px rgba(0,0,0,0.2);
+}
+
+button:active {
+  transform: translateY(2px);
+  box-shadow: 0 4px #372db5, 0 4px 6px rgba(0,0,0,0.15);
+}
+
+/* अलग-अलग color buttons (login/logout/save) */
+#loginBtn { background: linear-gradient(145deg,#10b981,#059669); box-shadow: 0 6px #047857; }
+#logoutBtn { background: linear-gradient(145deg,#ef4444,#b91c1c); box-shadow: 0 6px #7f1d1d; }
+#saveNoticeBtn { background: linear-gradient(145deg,#f59e0b,#b45309); box-shadow: 0 6px #78350f; }
+#addTextBtn { background: linear-gradient(145deg,#3b82f6,#1d4ed8); box-shadow: 0 6px #1e40af; }
+#addImageBtn { background: linear-gradient(145deg,#8b5cf6,#6d28d9); box-shadow: 0 6px #5b21b6; }
+#publishBtn { background: linear-gradient(145deg,#22c55e,#15803d); box-shadow: 0 6px #166534; }
 
 </style>
 
