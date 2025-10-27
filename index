@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Marathi Crime Files</title>
+<title>मराठी क्राइम फाईल्स</title>
 <script src="https://cdn.tailwindcss.com"></script>
 
 <script type="module">
@@ -42,6 +42,15 @@ const headlineText = document.getElementById("headlineText");
 const modalBg = document.getElementById("modalBg");
 const modalContent = document.getElementById("modalContent");
 
+// Carousel Elements
+const carouselInput = document.getElementById("carouselInput");
+const saveCarouselBtn = document.getElementById("saveCarouselBtn");
+const carouselInner = document.getElementById("carouselInner");
+
+let carouselImages = [];
+let currentIndex = 0;
+let carouselInterval;
+
 // Login / Logout
 loginBtn.onclick = () => signInWithPopup(auth, provider).catch(e => alert(e.message));
 logoutBtn.onclick = () => signOut(auth);
@@ -51,11 +60,13 @@ onAuthStateChanged(auth, (user) => {
   if (user && user.email === ADMIN_EMAIL) {
     editorArea.classList.remove("hidden");
     noticeEditor.classList.remove("hidden");
+    document.getElementById("carouselEditor").classList.remove("hidden");
     loginBtn.classList.add("hidden");
     logoutBtn.classList.remove("hidden");
   } else {
     editorArea.classList.add("hidden");
     noticeEditor.classList.add("hidden");
+    document.getElementById("carouselEditor").classList.add("hidden");
     loginBtn.classList.remove("hidden");
     logoutBtn.classList.add("hidden");
   }
@@ -113,7 +124,7 @@ document.getElementById("publishBtn").onclick = async () => {
   alert("News Published!");
 };
 
-// Load and Render Posts
+// Load and Render Posts with Share Button
 onSnapshot(query(collection(db, "news"), orderBy("time", "desc")), (snap) => {
   const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   renderPosts(posts);
@@ -131,8 +142,26 @@ function renderPosts(posts) {
       <div class="card-body">
         <h3>${post.title}</h3>
         <p>${firstText}...</p>
+        <button class="share-btn">Share</button>
       </div>`;
+
+    // Share button click
+    card.querySelector(".share-btn").onclick = (e) => {
+      e.stopPropagation(); // prevent card click
+      if (navigator.share) {
+        navigator.share({
+          title: post.title,
+          text: firstText,
+          url: window.location.href
+        }).catch(console.log);
+      } else {
+        prompt("Copy link to share:", window.location.href);
+      }
+    };
+
+    // Card click opens modal
     card.onclick = () => showModal(post);
+
     postsArea.appendChild(card);
   });
 
@@ -147,7 +176,6 @@ function showModal(post) {
     else modalContent.innerHTML += `<img src='${b.url}' class='w-full mb-2 rounded'>`;
   });
 
-  // Delete button for Admin
   const user = auth.currentUser;
   if (user && user.email === ADMIN_EMAIL) {
     const delBtn = document.createElement("button");
@@ -166,14 +194,10 @@ function showModal(post) {
 }
 
 // Close Modal
-modalBg.onclick = (e) => {
-  if (e.target === modalBg) modalBg.style.display = "none";
-};
+modalBg.onclick = (e) => { if (e.target === modalBg) modalBg.style.display = "none"; };
 
 // Menu Toggle
-window.toggleMenu = function () {
-  document.getElementById("menuList").classList.toggle("hidden");
-};
+window.toggleMenu = function () { document.getElementById("menuList").classList.toggle("hidden"); };
 
 // Notice Update
 document.getElementById("saveNoticeBtn").onclick = async () => {
@@ -185,8 +209,39 @@ document.getElementById("saveNoticeBtn").onclick = async () => {
 
 // Live Notice Scroll
 onSnapshot(doc(db, "settings", "notice"), (snap) => {
+  if (snap.exists()) noticeText.textContent = snap.data().text;
+});
+
+// Carousel Upload & Animation
+saveCarouselBtn.onclick = async () => {
+  const files = carouselInput.files;
+  if (!files.length) return alert("Select images!");
+  const urls = [];
+  for (const file of files) {
+    const formData = new FormData();
+    formData.append("image", file);
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=2387b6e1ec3474b6df29aaa462344077`, { method: "POST", body: formData });
+    const data = await res.json();
+    if (data.data?.url) urls.push(data.data.url);
+  }
+  await setDoc(doc(db, "settings", "carousel"), { images: urls, time: Date.now() });
+  alert("Carousel Images Saved!");
+};
+
+// Load Carousel
+onSnapshot(doc(db, "settings", "carousel"), (snap) => {
   if (snap.exists()) {
-    noticeText.textContent = snap.data().text;
+    carouselImages = snap.data().images || [];
+    carouselInner.innerHTML = "";
+    carouselImages.forEach(url => { const img = document.createElement("img"); img.src = url; carouselInner.appendChild(img); });
+    currentIndex = 0;
+    if (carouselInterval) clearInterval(carouselInterval);
+    if (carouselImages.length > 1) {
+      carouselInterval = setInterval(() => {
+        currentIndex = (currentIndex + 1) % carouselImages.length;
+        carouselInner.style.transform = `translateX(-${currentIndex * 100}%)`;
+      }, 4000);
+    }
   }
 });
 </script>
@@ -197,13 +252,7 @@ header{display:flex;justify-content:space-between;align-items:center;padding:8px
 header img{height:40px;width:auto;border-radius:6px;}
 .nav-btn,.auth-btn{padding:3px 6px;border-radius:6px;font-weight:600;cursor:pointer;transition:transform 0.2s;font-size:12px;}
 .nav-btn:hover,.auth-btn:hover{transform:scale(1.05);}
-
-
-
-  
 .notice-ticker{background:#dc2626;color:white;font-weight:600;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:52px;z-index:250;}
-
-  
 .headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;}
 .posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:8px;margin-top:10px;}
 .card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(2,6,23,0.06);cursor:pointer;transition:transform 0.2s;}
@@ -213,99 +262,57 @@ header img{height:40px;width:auto;border-radius:6px;}
 .editor{padding:12px;background:#fff;margin:6px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
 #modalBg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:1000;}
 #modalContent{background:#fff;padding:12px;border-radius:8px;max-height:90vh;overflow-y:auto;width:90%;max-width:600px;}
+.notice-ticker span,.headline-ticker span{display:inline-block;white-space:nowrap;animation:scroll-left 18s linear infinite;}
+@keyframes scroll-left{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
+.notice-ticker span:hover,.headline-ticker span:hover{animation-play-state:paused;}
+body{padding-bottom:50px;}
 
+/* Carousel Styles */
+#imageCarousel{width:100%;height:250px;overflow:hidden;position:relative;border-radius:10px;margin-bottom:10px;}
+#carouselInner{display:flex;transition:transform 1s ease-in-out;height:100%;}
+#carouselInner img{flex-shrink:0;width:100%;height:100%;object-fit:cover;}
+@media (max-width:640px){#imageCarousel{height:180px;}}
 
+/* Share Button Styles */
+.share-btn { background:#3b82f6;color:white;border-radius:6px;padding:5px 10px;font-weight:600;margin-top:5px;width:100%;cursor:pointer;transition: all 0.2s ease-in-out; }
+.share-btn:hover { background:#2563eb; }
 
-/* 🔄 Auto-scrolling notice & headline tickers */
-.notice-ticker span,
-.headline-ticker span {
-  display: inline-block;
-  white-space: nowrap;
-  animation: scroll-left 18s linear infinite;
+/* Footer Strip */
+.animated-footer {
+  background: linear-gradient(135deg,#1f2937,#111827,#1f2937);
+  background-size: 400% 400%;
+  animation: gradientShift 8s ease infinite;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
 }
-
-/* Animation keyframes */
-@keyframes scroll-left {
-  0% {
-    transform: translateX(100%);
-  }
-  100% {
-    transform: translateX(-100%);
-  }
-}
-
-.notice-ticker span:hover,
-.headline-ticker span:hover {
-  animation-play-state: paused;
-}
-
-/* 3D Style Buttons */
-button {
-  background: linear-gradient(145deg, #4f46e5, #4338ca); /* Gradient */
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 6px #372db5, 0 6px 10px rgba(0,0,0,0.15);
-  transition: all 0.2s ease;
-}
-
-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px #372db5, 0 8px 12px rgba(0,0,0,0.2);
-}
-
-button:active {
-  transform: translateY(2px);
-  box-shadow: 0 4px #372db5, 0 4px 6px rgba(0,0,0,0.15);
-}
-
-
-
-/* Different gradients for each button */
-#loginBtn { background: linear-gradient(135deg,#22c55e,#10b981); box-shadow:0 6px #059669; }
-#logoutBtn { background: linear-gradient(135deg,#ef4444,#f87171); box-shadow:0 6px #b91c1c; }
-#saveNoticeBtn { background: linear-gradient(135deg,#f59e0b,#fbbf24); box-shadow:0 6px #b45309; }
-#addTextBtn { background: linear-gradient(135deg,#3b82f6,#60a5fa); box-shadow:0 6px #1d4ed8; }
-#addImageBtn { background: linear-gradient(135deg,#8b5cf6,#a78bfa); box-shadow:0 6px #6d28d9; }
-#publishBtn { background: linear-gradient(135deg,#22d3ee,#06b6d4); box-shadow:0 6px #0e7490; }
-
-
-
-body {
-  padding-bottom: 50px; /* Footer ke liye space */
-}
-
-
-
-  
+@keyframes gradientShift { 0% {background-position:0% 50%;} 50% {background-position:100% 50%;} 100% {background-position:0% 50%;} }
+.footer-btn { display:inline-block;text-decoration:none;color:white;font-size:11px;padding:3px 6px;border-radius:5px;border:none;cursor:pointer;box-shadow:1px 1px 3px rgba(0,0,0,0.3),-1px -1px 3px rgba(255,255,255,0.05);transition:all 0.2s ease-in-out;text-align:center; }
+.footer-btn:hover { transform:translateY(-2px) scale(1.05); box-shadow:2px 4px 6px rgba(0,0,0,0.4),-2px -2px 6px rgba(255,255,255,0.1); animation:pulse 1s infinite alternate; }
+@keyframes pulse { 0% {transform:translateY(-2px) scale(1.05);} 100% {transform:translateY(-2px) scale(1.1);} }
+@media (max-width:640px){ .footer-btn { font-size:9px; padding:2px 4px; } }
 </style>
-
 </head>
 <body>
+
+<!-- Carousel -->
+<section id="carouselEditor" class="editor hidden mb-4">
+  <h2>📸 Admin: Upload Carousel Images</h2>
+  <input id="carouselInput" type="file" multiple>
+  <button id="saveCarouselBtn">Save Carousel</button>
+</section>
+<div id="imageCarousel"><div id="carouselInner"></div></div>
 
 <header>
   <div class="flex items-center space-x-2">
     <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo">
-    <h1 class="font-bold text-base sm:text-lg">Marathi Crime Files</h1>
+    <h1 class="font-bold text-base sm:text-lg">मराठी क्राइम फाईल्स</h1>
   </div>
   <div class="relative">
     <button onclick="toggleMenu()" class="nav-btn">☰ Menu</button>
     <div id="menuList" class="hidden absolute right-0 mt-1 bg-white text-blue-900 rounded-md shadow-lg overflow-hidden z-[10000]">
-    
-      
-      
-      
-      
       <a href="story.html" class="block px-3 py-1 hover:bg-blue-100">Story</a>
       <a href="gumshuda.html" class="block px-3 py-1 hover:bg-blue-100">Gumshuda</a>
       <a href="lawarish.html" class="block px-3 py-1 hover:bg-blue-100">Lawarish</a>
       <a href="crime.html" class="block px-3 py-1 hover:bg-blue-100">Crime</a>
-
-
-      
     </div>
   </div>
   <div class="flex space-x-1">
@@ -315,16 +322,7 @@ body {
 </header>
 
 <div class="notice-ticker"><span id="noticeText">Loading notice...</span></div>
-
-
-
-  
 <div class="headline-ticker"><span id="headlineText">Loading headlines...</span></div>
-
-
-
-
-  
 
 <section id="editorArea" class="editor hidden">
   <h2>🖋️ Admin: Create/Edit News</h2>
@@ -347,62 +345,13 @@ body {
 <!-- Modal -->
 <div id="modalBg"><div id="modalContent"></div></div>
 
-
-
-<!-- Footer Start -->
-<footer class="fixed bottom-0 w-full bg-gray-900 text-white flex justify-center items-center p-2 z-50">
-  <div class="flex space-x-2">
-
-    
-    
-  
-    <a href="contact.html" class="footer-btn">Contact</a>
-    <a href="about.html" class="footer-btn">About</a>
-    <a href="privacy.html" class="footer-btn">Privacy</a>
-    <a href="terms.html" class="footer-btn">T&C</a>
-  </div>
+<!-- Animated Footer Strip -->
+<footer class="fixed bottom-0 w-full flex justify-center items-center space-x-2 py-1 z-50 animated-footer">
+  <a href="about.html" class="footer-btn">About</a>
+  <a href="contact.html" class="footer-btn">Contact</a>
+  <a href="privacy.html" class="footer-btn">Privacy</a>
+  <a href="terms.html" class="footer-btn">T&C</a>
 </footer>
 
-<style>
-/* Footer 3D Buttons */
-.footer-btn {
-  background: linear-gradient(145deg,#4f46e5,#4338ca);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  text-decoration: none;
-  box-shadow: 0 4px #372db5, 0 4px 6px rgba(0,0,0,0.1);
-  transition: all 0.2s ease;
-}
-
-.footer-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px #372db5, 0 6px 8px rgba(0,0,0,0.15);
-}
-
-.footer-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px #372db5, 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* Responsive: small padding on small screens */
-@media (max-width: 640px) {
-  .footer-btn {
-    padding: 3px 6px;
-    font-size: 10px;
-  }
-}
-</style>
-<!-- Footer End -->
-
-
-
-
-
-
-
-  
 </body>
 </html>
