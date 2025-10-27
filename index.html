@@ -316,7 +316,7 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 </head>
 <body>
 
-<header class="flex justify-between items-center bg-gradient-to-r from-blue-900 to-blue-700 text-white px-3 py-1 shadow-md fixed top-0 w-full z-50">
+<header class="flex justify-between items-center bg-gradient-to-r from-blue-900 to-blue-700 text-white px-3 py-1 shadow-md fixed top-0 left-0 w-full z-[9999]">
   <div class="flex items-center space-x-2">
     <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo" class="w-8 h-8 rounded-full shadow-md">
     <h1 class="font-bold text-base sm:text-lg">Marathi Crime Files</h1>
@@ -325,7 +325,7 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
   <!-- 🔹 Dropdown Menu -->
   <div class="relative">
     <button onclick="toggleMenu()" class="nav-btn text-sm px-2 py-1">☰ Menu</button>
-    <div id="menuList" class="hidden absolute right-0 mt-2 bg-white text-blue-900 rounded-lg shadow-lg overflow-hidden z-[9999]">
+    <div id="menuList" class="hidden absolute right-0 mt-1 bg-white text-blue-900 rounded-md shadow-lg overflow-hidden">
       <button class="dropdown-btn">Story</button>
       <button class="dropdown-btn">Gumshuda</button>
       <button class="dropdown-btn">Lawarish</button>
@@ -341,6 +341,13 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 </header>
 
 <style>
+/* 🧩 RESET BODY MARGIN GAP */
+body {
+  margin: 0;
+  padding-top: 45px; /* header ke height jitna space so content neeche start ho */
+}
+
+/* 🔹 Buttons */
 .nav-btn {
   background: linear-gradient(180deg, #ffffff, #dbeafe);
   color: #1e3a8a;
@@ -378,19 +385,19 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 .auth-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 6px rgba(0,0,0,0.25); }
 .auth-btn:active { transform: translateY(1px); box-shadow: 0 2px 3px rgba(0,0,0,0.2); }
 
-/* Ensures dropdown stays on top */
+/* 🔹 Dropdown menu always on top of everything */
 #menuList {
+  z-index: 99999;
   position: absolute;
-  z-index: 9999 !important;
 }
 </style>
 
 <script>
 function toggleMenu() {
-  const menu = document.getElementById('menuList');
-  menu.classList.toggle('hidden');
+  document.getElementById('menuList').classList.toggle('hidden');
 }
 </script>
+
 
 
 
