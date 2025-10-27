@@ -180,21 +180,41 @@ onSnapshot(noticeRef, snap => {
   }
 });
 
-// Headline Ticker - Breaking News
+// ब्रेकिंग न्यूज़ पट्टी शुरू करने का फंक्शन
 function startHeadlineTicker(posts){
   const headlineEl = document.getElementById("headlineText");
-  if(!posts || posts.length===0){
+
+  // अगर पोस्ट नहीं है, तो खाली कर दो
+  if(!posts || posts.length === 0){
     headlineEl.textContent = "";
     headlineEl.style.animation = "none";
     return;
   }
-  const text = posts.map(p=>"BREAKING: "+p.title).join("  —  ") + "  —  ";
+
+  // सभी पोस्ट को जोड़ो, बीच में "—" separator डालो और "BREAKING:" जोड़ो
+  const text = posts.map(p => "BREAKING: " + p.title).join("  —  ") + "  —  ";
   headlineEl.textContent = text;
+
+  // animation reset करो
   headlineEl.style.animation = "none";
-  void headlineEl.offsetWidth;
-  const speed = Math.max(8, text.length / 2);
-  headlineEl.style.animation = `scrollHeadline ${speed}s linear infinite`;
+  void headlineEl.offsetWidth; // reflow trigger
+
+  // speed calculate करना (pixels के हिसाब से)
+  const tickerWidth = headlineEl.scrollWidth;           // टेक्स्ट की कुल लंबाई
+  const containerWidth = headlineEl.parentElement.offsetWidth; // container की लंबाई
+  const baseSpeed = 100; // pixels per second
+  const duration = (tickerWidth + containerWidth) / baseSpeed; // समय सेकंड में
+
+@keyframes scrollHeadline {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
 }
+
+#headlineText {
+  display: inline-block;
+  white-space: nowrap;
+}
+
 </script>
 
 <style>
