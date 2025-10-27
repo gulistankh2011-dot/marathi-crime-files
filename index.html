@@ -11,7 +11,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Firebase
+// Firebase setup
 const firebaseConfig = {
   apiKey: "AIzaSyCLCUAiPz-sqhFDskG9g9AwyUI1RdTQWfk",
   authDomain: "marathi-crime-files.firebaseapp.com",
@@ -41,10 +41,6 @@ const noticeText = document.getElementById("noticeText");
 const headlineText = document.getElementById("headlineText");
 const modalBg = document.getElementById("modalBg");
 const modalContent = document.getElementById("modalContent");
-const modalClose = document.getElementById("modalClose");
-
-let editingId = null;
-let currentPosts = [];
 
 // Login/Logout
 loginBtn.onclick = ()=>signInWithPopup(auth, provider).catch(e=>alert(e.message));
@@ -64,7 +60,7 @@ onAuthStateChanged(auth,user=>{
   }
 });
 
-// Admin Add Text/Image Blocks
+// Add blocks
 document.getElementById("addTextBtn").onclick = ()=>{
   const t = document.createElement("textarea");
   t.placeholder = "Write paragraph...";
@@ -80,7 +76,7 @@ document.getElementById("addImageBtn").onclick = ()=>{
   blocksList.appendChild(inp);
 }
 
-// Publish News
+// Publish news
 document.getElementById("publishBtn").onclick = async()=>{
   const title = aTitle.value.trim();
   const cat = aCat.value.trim();
@@ -97,48 +93,40 @@ document.getElementById("publishBtn").onclick = async()=>{
     }
   }
   if(blocks.length===0) return alert("Add content!");
-  if(editingId){
-    await setDoc(doc(db,"news",editingId),{title,category:cat,blocks,time:Date.now()});
-    editingId=null;
-  } else {
-    await addDoc(collection(db,"news"),{title,category:cat,blocks,time:Date.now()});
-  }
+  await addDoc(collection(db,"news"),{title,category:cat,blocks,time:Date.now()});
   aTitle.value=aCat.value=""; blocksList.innerHTML="";
 }
 
-// Load Posts
+// Load posts
 onSnapshot(query(collection(db,"news"),orderBy("time","desc")),snap=>{
-  currentPosts = snap.docs.map(d=>({id:d.id,...d.data()}));
-  renderPosts();
+  const posts = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderPosts(posts);
 });
 
-// Render Posts
-function renderPosts(){
+// Render posts
+function renderPosts(posts){
   postsArea.innerHTML="";
-  currentPosts.forEach((d,i)=>{
-    const firstImg = d.blocks.find(b=>b.type==="image")?.url || "https://via.placeholder.com/300x200?text=No+Image";
-    const firstText = d.blocks.find(b=>b.type==="text")?.text.substring(0,80)+"..." || "";
+  posts.forEach(post=>{
+    const firstImg = post.blocks.find(b=>b.type==="image")?.url || "https://via.placeholder.com/300x200?text=No+Image";
+    const firstText = post.blocks.find(b=>b.type==="text")?.text.substring(0,80)+"..." || "";
     const card = document.createElement("div");
     card.className="card";
-    card.innerHTML = `<img src='${firstImg}' class='card-img'><div class='card-body'><h3>${d.title}</h3><p>${firstText}</p></div>`;
-    card.onclick = ()=>showModal(d);
+    card.innerHTML = `<img src='${firstImg}' class='card-img'><div class='card-body'><h3>${post.title}</h3><p>${firstText}</p></div>`;
+    card.onclick = ()=>showModal(post);
     postsArea.appendChild(card);
   });
-
-  headlineText.textContent=currentPosts.slice(0,5).map(p=>p.title).join(" — ");
+  headlineText.textContent=posts.slice(0,5).map(p=>p.title).join(" — ");
 }
 
 // Modal
-modalClose.onclick = ()=>modalBg.style.display="none";
-
 function showModal(post){
-  modalContent.innerHTML = `<span id="modalClose" onclick="document.getElementById('modalBg').style.display='none'" style="cursor:pointer;float:right;color:red;font-weight:bold;">X</span>
+  modalContent.innerHTML = `<span id="modalClose" style="cursor:pointer;float:right;color:red;font-weight:bold;">X</span>
                             <h2 class='text-lg font-bold mb-2'>${post.title}</h2>`;
   post.blocks.forEach(b=>{
     if(b.type==="text") modalContent.innerHTML += `<p class='mb-2 text-gray-800'>${b.text}</p>`;
     else modalContent.innerHTML += `<img src='${b.url}' class='w-full mb-2 object-contain'>`;
   });
-  // Admin delete button
+
   onAuthStateChanged(auth,user=>{
     if(user && user.email===ADMIN_EMAIL){
       const delBtn = document.createElement("button");
@@ -151,19 +139,21 @@ function showModal(post){
       modalContent.appendChild(delBtn);
     }
   });
+
+  const closeBtn = modalContent.querySelector("#modalClose");
+  closeBtn.onclick = ()=>modalBg.style.display="none";
+
   modalBg.style.display="flex";
 }
 
 // Menu toggle
 function toggleMenu(){document.getElementById("menuList").classList.toggle("hidden");}
 
-// Save Notice
+// Notice
 document.getElementById("saveNoticeBtn").onclick = async()=>{
   const text = noticeInput.value.trim();
   await setDoc(doc(db,"settings","notice"),{text});
 }
-
-// Load Notice
 const noticeRef = doc(db,"settings","notice");
 onSnapshot(noticeRef,snap=>{
   noticeText.textContent = snap.exists()?snap.data().text:"";
