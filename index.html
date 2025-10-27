@@ -6,13 +6,12 @@
 <title>Marathi Crime Files</title>
 <script src="https://cdn.tailwindcss.com"></script>
 
-<!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Firebase Config
+// Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyCLCUAiPz-sqhFDskG9g9AwyUI1RdTQWfk",
   authDomain: "marathi-crime-files.firebaseapp.com",
@@ -40,11 +39,14 @@ const aCat = document.getElementById("aCat");
 const noticeInput = document.getElementById("noticeInput");
 const noticeText = document.getElementById("noticeText");
 const headlineText = document.getElementById("headlineText");
+const modalBg = document.getElementById("modalBg");
+const modalContent = document.getElementById("modalContent");
+const modalClose = document.getElementById("modalClose");
 
 let editingId = null;
 let currentPosts = [];
 
-// 🔹 Login/Logout
+// Login/Logout
 loginBtn.onclick = ()=>signInWithPopup(auth, provider).catch(e=>alert(e.message));
 logoutBtn.onclick = ()=>signOut(auth);
 
@@ -62,7 +64,7 @@ onAuthStateChanged(auth,user=>{
   }
 });
 
-// 🔹 Admin Add Text/Image Blocks
+// Admin Add Text/Image Blocks
 document.getElementById("addTextBtn").onclick = ()=>{
   const t = document.createElement("textarea");
   t.placeholder = "Write paragraph...";
@@ -78,7 +80,7 @@ document.getElementById("addImageBtn").onclick = ()=>{
   blocksList.appendChild(inp);
 }
 
-// 🔹 Publish News
+// Publish News
 document.getElementById("publishBtn").onclick = async()=>{
   const title = aTitle.value.trim();
   const cat = aCat.value.trim();
@@ -87,7 +89,6 @@ document.getElementById("publishBtn").onclick = async()=>{
   for(const el of blocksList.children){
     if(el.dataset.type==="text" && el.value.trim()) blocks.push({type:"text",text:el.value.trim()});
     else if(el.type==="file" && el.files.length>0){
-      // IMGBB Upload
       const formData = new FormData();
       formData.append("image",el.files[0]);
       const res = await fetch(`https://api.imgbb.com/1/upload?key=2387b6e1ec3474b6df29aaa462344077`,{method:"POST",body:formData});
@@ -105,13 +106,13 @@ document.getElementById("publishBtn").onclick = async()=>{
   aTitle.value=aCat.value=""; blocksList.innerHTML="";
 }
 
-// 🔹 Load Posts
+// Load Posts
 onSnapshot(query(collection(db,"news"),orderBy("time","desc")),snap=>{
   currentPosts = snap.docs.map(d=>({id:d.id,...d.data()}));
   renderPosts();
 });
 
-// 🔹 Render Posts
+// Render Posts
 function renderPosts(){
   postsArea.innerHTML="";
   currentPosts.forEach((d,i)=>{
@@ -124,65 +125,56 @@ function renderPosts(){
     postsArea.appendChild(card);
   });
 
-  // Headline ticker
   headlineText.textContent=currentPosts.slice(0,5).map(p=>p.title).join(" — ");
-
-  // Image slider animation
-  startSlider();
 }
 
-// 🔹 Modal
-const modalBg = document.getElementById("modalBg");
-const modalContent = document.getElementById("modalContent");
-document.getElementById("modalClose").onclick = ()=>modalBg.style.display="none";
+// Modal
+modalClose.onclick = ()=>modalBg.style.display="none";
+
 function showModal(post){
-  modalContent.innerHTML = `<h2 class='text-lg font-bold mb-2'>${post.title}</h2>`;
+  modalContent.innerHTML = `<span id="modalClose" onclick="document.getElementById('modalBg').style.display='none'" style="cursor:pointer;float:right;color:red;font-weight:bold;">X</span>
+                            <h2 class='text-lg font-bold mb-2'>${post.title}</h2>`;
   post.blocks.forEach(b=>{
     if(b.type==="text") modalContent.innerHTML += `<p class='mb-2 text-gray-800'>${b.text}</p>`;
-    else modalContent.innerHTML += `<img src='${b.url}' class='image-zoom mb-2'>`;
+    else modalContent.innerHTML += `<img src='${b.url}' class='w-full mb-2 object-contain'>`;
+  });
+  // Admin delete button
+  onAuthStateChanged(auth,user=>{
+    if(user && user.email===ADMIN_EMAIL){
+      const delBtn = document.createElement("button");
+      delBtn.textContent="❌ Delete News";
+      delBtn.className="bg-red-600 text-white p-2 rounded mt-2";
+      delBtn.onclick = async()=>{
+        if(confirm("Are you sure?")) await deleteDoc(doc(db,"news",post.id));
+        modalBg.style.display="none";
+      };
+      modalContent.appendChild(delBtn);
+    }
   });
   modalBg.style.display="flex";
 }
 
-// 🔹 Image Slider for posts
-let sliderIndex = 0;
-function startSlider(){
-  const images = document.querySelectorAll(".card-img");
-  if(images.length===0) return;
-  images.forEach((img,i)=>img.style.display="none");
-  images[sliderIndex].style.display="block";
-  setInterval(()=>{
-    images.forEach(img=>img.style.display="none");
-    sliderIndex = (sliderIndex+1)%images.length;
-    images[sliderIndex].style.display="block";
-  },3000);
-}
-
-// 🔹 Menu Toggle
+// Menu toggle
 function toggleMenu(){document.getElementById("menuList").classList.toggle("hidden");}
 
-// 🔹 Save Notice
+// Save Notice
 document.getElementById("saveNoticeBtn").onclick = async()=>{
   const text = noticeInput.value.trim();
   await setDoc(doc(db,"settings","notice"),{text});
 }
 
-// 🔹 Load Notice
+// Load Notice
 const noticeRef = doc(db,"settings","notice");
 onSnapshot(noticeRef,snap=>{
   noticeText.textContent = snap.exists()?snap.data().text:"";
-  // scrolling animation restart
   const ticker = document.querySelector(".ticker-text");
-  ticker.style.animation = "none";
-  void ticker.offsetWidth;
-  ticker.style.animation = null;
+  ticker.style.animation = "none"; void ticker.offsetWidth; ticker.style.animation = null;
 });
 </script>
 
 <style>
 body{margin:0;font-family:Arial,sans-serif;background:#f6f7fb;color:#0b2540;}
-header{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#1e40af;color:white;position:sticky;top:0;z-index:300;box-shadow:0 2px 5px rgba(0,0,0,0.2);}
-header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:cover;}
+header{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#1e40af;color:white;position:sticky;top:0;z-index:300;}
 .nav-btn,.auth-btn{padding:3px 8px;border-radius:6px;font-weight:600;cursor:pointer;transition:transform 0.2s;font-size:12px;}
 .nav-btn:hover,.auth-btn:hover{transform:scale(1.05);}
 .notice-ticker{background:#dc2626;color:white;font-weight:600;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:60px;z-index:250;}
@@ -199,11 +191,10 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 .editor{padding:12px;background:#fff;margin:6px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
 .editor input,.editor textarea{border:1px solid #ccc;border-radius:6px;padding:6px;margin-bottom:6px;width:100%;}
 .editor button{padding:6px 12px;margin-right:6px;border-radius:6px;background:#1e40af;color:white;cursor:pointer;}
-/* Modal */
 #modalBg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:1000;}
 #modalContent{background:#fff;padding:12px;border-radius:8px;max-height:90vh;overflow-y:auto;width:90%;max-width:600px;}
-#modalClose{position:absolute;top:8px;right:12px;cursor:pointer;font-weight:bold;color:red;}
 </style>
+
 </head>
 <body>
 
@@ -249,7 +240,7 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 </section>
 
 <!-- Modal -->
-<div id="modalBg"><div id="modalContent"><span id="modalClose">X</span></div></div>
+<div id="modalBg"><div id="modalContent"></div></div>
 
 </body>
 </html>
