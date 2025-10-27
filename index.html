@@ -316,7 +316,7 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 </head>
 <body>
 
-<header class="flex justify-between items-center bg-gradient-to-r from-blue-900 to-blue-700 text-white px-3 py-1 shadow-md fixed top-0 left-0 w-full z-[9999]">
+<header class="flex justify-between items-center bg-gradient-to-r from-blue-900 to-blue-700 text-white px-3 py-1.5 shadow-md fixed top-0 left-0 w-full z-[9999]">
   <div class="flex items-center space-x-2">
     <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo" class="w-8 h-8 rounded-full shadow-md">
     <h1 class="font-bold text-base sm:text-lg">Marathi Crime Files</h1>
@@ -324,8 +324,8 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 
   <!-- 🔹 Dropdown Menu -->
   <div class="relative">
-    <button onclick="toggleMenu()" class="nav-btn text-sm px-2 py-1">☰ Menu</button>
-    <div id="menuList" class="hidden absolute right-0 mt-1 bg-white text-blue-900 rounded-md shadow-lg overflow-hidden">
+    <button onclick="toggleMenu()" class="nav-btn text-xs sm:text-sm px-2 py-[2px]">☰ Menu</button>
+    <div id="menuList" class="hidden absolute right-0 mt-1 bg-white text-blue-900 rounded-md shadow-lg overflow-hidden z-[10000]">
       <button class="dropdown-btn">Story</button>
       <button class="dropdown-btn">Gumshuda</button>
       <button class="dropdown-btn">Lawarish</button>
@@ -335,16 +335,36 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 
   <!-- 🔹 Auth Buttons -->
   <div class="flex space-x-1">
-    <button id="loginBtn" class="auth-btn bg-green-500 text-xs px-2 py-1">Login</button>
-    <button id="logoutBtn" class="auth-btn bg-red-600 text-xs px-2 py-1 hidden">Logout</button>
+    <button id="loginBtn" class="auth-btn bg-green-500 text-xs px-2 py-[2px]">Login</button>
+    <button id="logoutBtn" class="auth-btn bg-red-600 text-xs px-2 py-[2px] hidden">Logout</button>
   </div>
 </header>
 
 <style>
-/* 🧩 RESET BODY MARGIN GAP */
+/* 🧩 RESET BODY MARGIN */
 body {
   margin: 0;
-  padding-top: 52px; /* header ke height jitna space so content neeche start ho */
+  padding-top: 50px; /* header ke height jitna space */
+  background: #f6f7fb;
+}
+
+/* 🔹 Notice bar */
+.notice-ticker {
+  background: #1e3a8a;
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 4px 10px; /* kam height */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.headline-ticker {
+  background: #2563eb;
+  color: white;
+  font-weight: 500;
+  font-size: 13px;
+  padding: 4px 10px; /* kam height */
 }
 
 /* 🔹 Buttons */
@@ -384,12 +404,6 @@ body {
 }
 .auth-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 6px rgba(0,0,0,0.25); }
 .auth-btn:active { transform: translateY(1px); box-shadow: 0 2px 3px rgba(0,0,0,0.2); }
-
-/* 🔹 Dropdown menu always on top of everything */
-#menuList {
-  z-index: 99999;
-  position: absolute;
-}
 </style>
 
 <script>
@@ -398,20 +412,6 @@ function toggleMenu() {
 }
 </script>
 
-
-
-
-
-<div class="notice-ticker"><span class="ticker-text" id="noticeText"></span></div>
-<div class="headline-ticker"><span class="ticker-text" id="headlineText"></span></div>
-
-<section id="postsArea" class="posts-grid"></section>
-
-<section id="noticeEditor" class="editor hidden">
-  <h2>📰 Admin Notice</h2>
-  <input id="noticeInput" placeholder="Enter notice text...">
-  <button id="saveNoticeBtn">Save</button>
-</section>
 
 <section id="editorArea" class="editor hidden">
   <h2>🖋️ Admin: Create/Edit News</h2>
