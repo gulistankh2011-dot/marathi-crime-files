@@ -316,16 +316,16 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 </head>
 <body>
 
-<header class="flex justify-between items-center bg-gradient-to-r from-blue-900 to-blue-700 text-white px-4 py-2 shadow-md fixed top-0 w-full z-50">
+<header class="flex justify-between items-center bg-gradient-to-r from-blue-900 to-blue-700 text-white px-3 py-1 shadow-md fixed top-0 w-full z-50">
   <div class="flex items-center space-x-2">
-    <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo" class="w-10 h-10 rounded-full shadow-lg">
-    <h1 class="font-bold text-lg sm:text-xl">Marathi Crime Files</h1>
+    <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo" class="w-8 h-8 rounded-full shadow-md">
+    <h1 class="font-bold text-base sm:text-lg">Marathi Crime Files</h1>
   </div>
 
   <!-- 🔹 Dropdown Menu -->
   <div class="relative">
-    <button onclick="toggleMenu()" class="nav-btn">☰ Menu</button>
-    <div id="menuList" class="hidden absolute right-0 mt-2 bg-white text-blue-900 rounded-lg shadow-lg overflow-hidden">
+    <button onclick="toggleMenu()" class="nav-btn text-sm px-2 py-1">☰ Menu</button>
+    <div id="menuList" class="hidden absolute right-0 mt-2 bg-white text-blue-900 rounded-lg shadow-lg overflow-hidden z-[9999]">
       <button class="dropdown-btn">Story</button>
       <button class="dropdown-btn">Gumshuda</button>
       <button class="dropdown-btn">Lawarish</button>
@@ -334,9 +334,9 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
   </div>
 
   <!-- 🔹 Auth Buttons -->
-  <div class="flex space-x-2">
-    <button id="loginBtn" class="auth-btn bg-green-500">Login</button>
-    <button id="logoutBtn" class="auth-btn bg-red-600 hidden">Logout</button>
+  <div class="flex space-x-1">
+    <button id="loginBtn" class="auth-btn bg-green-500 text-xs px-2 py-1">Login</button>
+    <button id="logoutBtn" class="auth-btn bg-red-600 text-xs px-2 py-1 hidden">Logout</button>
   </div>
 </header>
 
@@ -345,49 +345,53 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
   background: linear-gradient(180deg, #ffffff, #dbeafe);
   color: #1e3a8a;
   font-weight: 600;
-  padding: 6px 10px;
   border: none;
-  border-radius: 8px;
-  box-shadow: 0 4px 0 #93c5fd;
+  border-radius: 6px;
+  box-shadow: 0 3px 0 #93c5fd;
   cursor: pointer;
-  font-size: 14px;
   transition: transform 0.2s, box-shadow 0.2s;
 }
-.nav-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #60a5fa; }
+.nav-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 0 #60a5fa; }
 .nav-btn:active { transform: translateY(1px); box-shadow: 0 2px 0 #3b82f6; }
 
 .dropdown-btn {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 8px 14px;
+  padding: 6px 12px;
+  font-size: 14px;
   font-weight: 600;
   border: none;
   background: none;
   cursor: pointer;
   transition: background 0.2s;
 }
-.dropdown-btn:hover {
-  background: #e0e7ff;
-}
+.dropdown-btn:hover { background: #e0e7ff; }
 
 .auth-btn {
   color: #fff;
   font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 8px;
-  box-shadow: 0 4px 0 rgba(0,0,0,0.25);
+  border-radius: 6px;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.25);
   transition: transform 0.2s, box-shadow 0.2s;
 }
-.auth-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 8px rgba(0,0,0,0.3); }
-.auth-btn:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+.auth-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 6px rgba(0,0,0,0.25); }
+.auth-btn:active { transform: translateY(1px); box-shadow: 0 2px 3px rgba(0,0,0,0.2); }
+
+/* Ensures dropdown stays on top */
+#menuList {
+  position: absolute;
+  z-index: 9999 !important;
+}
 </style>
 
 <script>
 function toggleMenu() {
-  document.getElementById('menuList').classList.toggle('hidden');
+  const menu = document.getElementById('menuList');
+  menu.classList.toggle('hidden');
 }
 </script>
+
 
 
 
