@@ -1,4 +1,4 @@
-<!doctype html>
+<!doctype html>nnn
 <html lang="hi">
 <head>
 <meta charset="utf-8">
@@ -316,16 +316,69 @@ header img{height:50px;width:50px;border-radius:6px;margin-right:8px;object-fit:
 </head>
 <body>
 
-<header>
-  <div class="flex items-center">
-    <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo">
-    <h1 class="font-bold text-xl">Marathi Crime Files</h1>
+<header class="flex justify-between items-center bg-gradient-to-r from-blue-900 to-blue-700 text-white px-4 py-2 shadow-md fixed top-0 w-full z-50">
+  <div class="flex items-center space-x-2">
+    <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo" class="w-10 h-10 rounded-full shadow-lg">
+    <h1 class="font-bold text-lg sm:text-xl">Marathi Crime Files</h1>
   </div>
-  <div class="header-buttons">
-    <button id="loginBtn" class="bg-green-500 text-white">Login</button>
-    <button id="logoutBtn" class="hidden bg-red-600 text-white">Logout</button>
+
+  <!-- 🔹 Navigation Buttons -->
+  <div class="hidden sm:flex space-x-2">
+    <button class="nav-btn">Story</button>
+    <button class="nav-btn">Gumshuda</button>
+    <button class="nav-btn">Lawarish</button>
+    <button class="nav-btn">Crime</button>
+  </div>
+
+  <!-- 🔹 Auth Buttons -->
+  <div class="flex space-x-2">
+    <button id="loginBtn" class="auth-btn bg-green-500">Login</button>
+    <button id="logoutBtn" class="auth-btn bg-red-600 hidden">Logout</button>
   </div>
 </header>
+
+<style>
+/* 🔸 Common Header Buttons */
+.nav-btn {
+  background: linear-gradient(180deg, #ffffff, #dbeafe);
+  color: #1e3a8a;
+  font-weight: 600;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 0 #93c5fd;
+  cursor: pointer;
+  font-size: 14px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.nav-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #60a5fa;
+}
+.nav-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 0 #3b82f6;
+}
+
+/* 🔸 Auth Buttons (Login/Logout) */
+.auth-btn {
+  color: #fff;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.25);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.auth-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0,0,0,0.3);
+}
+.auth-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+</style>
+
 
 <div class="notice-ticker"><span class="ticker-text" id="noticeText"></span></div>
 <div class="headline-ticker"><span class="ticker-text" id="headlineText"></span></div>
