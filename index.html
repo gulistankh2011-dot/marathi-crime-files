@@ -158,6 +158,32 @@ function showModal(post) {
     else modalContent.innerHTML += `<img src='${b.url}' class='w-full mb-2 rounded'>`;
   });
 
+
+
+
+  // Share button for everyone
+  const shareBtn = document.createElement("button");
+  shareBtn.textContent = "📤 Share News";
+  shareBtn.className = "bg-blue-600 text-white p-2 rounded mt-2 mr-2";
+  shareBtn.onclick = () => {
+    const shareData = {
+      title: post.title,
+      text: "मराठी क्राइम फाईल्स वरची बातमी पहा 👇",
+      url: window.location.href + `#${post.id}`,
+    };
+
+    if (navigator.share) {
+      navigator.share(shareData).catch(err => console.log("Share canceled", err));
+    } else {
+      alert("Sharing not supported on this device.");
+    }
+  };
+  modalContent.appendChild(shareBtn);
+
+
+
+
+  
   // Delete button for Admin
   const user = auth.currentUser;
   if (user && user.email === ADMIN_EMAIL) {
