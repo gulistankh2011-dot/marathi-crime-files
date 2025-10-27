@@ -4,6 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>मराठी क्राइम फाईल्स</title>
+
+
+  <meta property="og:title" content="मराठी क्राइम फाईल्स - Post Title">
+  <meta property="og:description" content="Post का excerpt यहाँ...">
+  <meta property="og:image" content="https://yourwebsite.com/path-to-logo-or-post-image.jpg">
+  <meta property="og:url" content="https://yourwebsite.com/news/post-id">
+  <meta property="og:type" content="website">
+
+
+
+
+
+
+
+
 <script src="https://cdn.tailwindcss.com"></script>
 
 <script type="module">
