@@ -148,17 +148,37 @@ function showModal(post){
 // Menu toggle
 function toggleMenu(){document.getElementById("menuList").classList.toggle("hidden");}
 
-// Notice
-document.getElementById("saveNoticeBtn").onclick = async()=>{
+// 🔹 Notice Save
+const saveNoticeBtn = document.getElementById("saveNoticeBtn");
+
+saveNoticeBtn.onclick = async () => {
   const text = noticeInput.value.trim();
-  await setDoc(doc(db,"settings","notice"),{text});
-}
-const noticeRef = doc(db,"settings","notice");
-onSnapshot(noticeRef,snap=>{
-  noticeText.textContent = snap.exists()?snap.data().text:"";
+  if(!text) return alert("Enter notice text!");
+  try {
+    await setDoc(doc(db, "settings", "notice"), { text, time: Date.now() });
+    alert("Notice saved!");
+    noticeInput.value = "";
+  } catch (e) {
+    alert("Error saving notice: " + e.message);
+  }
+};
+
+// 🔹 Notice Live Scroll
+const noticeRef = doc(db, "settings", "notice");
+onSnapshot(noticeRef, snap => {
   const ticker = document.querySelector(".ticker-text");
-  ticker.style.animation = "none"; void ticker.offsetWidth; ticker.style.animation = null;
+  if (snap.exists()) {
+    noticeText.textContent = snap.data().text;
+
+    // Reset animation
+    ticker.style.animation = "none";
+    void ticker.offsetWidth; // trigger reflow
+    ticker.style.animation = "scrollNotice 15s linear infinite";
+  } else {
+    noticeText.textContent = "";
+  }
 });
+
 </script>
 
 <style>
