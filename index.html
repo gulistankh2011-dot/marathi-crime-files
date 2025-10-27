@@ -119,8 +119,7 @@ function renderPosts(posts){
 
 // Modal
 function showModal(post){
-  modalContent.innerHTML = `<span id="modalClose" style="cursor:pointer;float:right;color:red;font-weight:bold;">X</span>
-                            <h2 class='text-lg font-bold mb-2'>${post.title}</h2>`;
+  modalContent.innerHTML = `<h2 class='text-lg font-bold mb-2'>${post.title}</h2>`;
   post.blocks.forEach(b=>{
     if(b.type==="text") modalContent.innerHTML += `<p class='mb-2 text-gray-800'>${b.text}</p>`;
     else modalContent.innerHTML += `<img src='${b.url}' class='w-full mb-2 object-contain'>`;
@@ -139,24 +138,23 @@ function showModal(post){
     }
   });
 
-  const closeBtn = modalContent.querySelector("#modalClose");
-  closeBtn.onclick = ()=>modalBg.style.display="none";
-
   modalBg.style.display="flex";
+}
+
+// Close modal on background click
+modalBg.onclick = (e)=>{
+  if(e.target===modalBg) modalBg.style.display="none";
 }
 
 // Menu toggle
 function toggleMenu(){document.getElementById("menuList").classList.toggle("hidden");}
 
 // 🔹 Notice Save
-const saveNoticeBtn = document.getElementById("saveNoticeBtn");
-
-saveNoticeBtn.onclick = async () => {
+document.getElementById("saveNoticeBtn").onclick = async () => {
   const text = noticeInput.value.trim();
   if(!text) return alert("Enter notice text!");
   try {
     await setDoc(doc(db, "settings", "notice"), { text, time: Date.now() });
-    alert("Notice saved!");
     noticeInput.value = "";
   } catch (e) {
     alert("Error saving notice: " + e.message);
@@ -166,19 +164,14 @@ saveNoticeBtn.onclick = async () => {
 // 🔹 Notice Live Scroll
 const noticeRef = doc(db, "settings", "notice");
 onSnapshot(noticeRef, snap => {
-  const ticker = document.querySelector(".ticker-text");
   if (snap.exists()) {
     noticeText.textContent = snap.data().text;
-
-    // Reset animation
+    const ticker = document.querySelector(".ticker-text");
     ticker.style.animation = "none";
-    void ticker.offsetWidth; // trigger reflow
-    ticker.style.animation = "scrollNotice 15s linear infinite";
-  } else {
-    noticeText.textContent = "";
+    void ticker.offsetWidth;
+    ticker.style.animation = "scrollNotice 10s linear infinite";
   }
 });
-
 </script>
 
 <style>
@@ -188,13 +181,13 @@ header img{height:40px;width:auto;border-radius:6px;}
 .nav-btn,.auth-btn{padding:3px 6px;border-radius:6px;font-weight:600;cursor:pointer;transition:transform 0.2s;font-size:12px;}
 .nav-btn:hover,.auth-btn:hover{transform:scale(1.05);}
 .notice-ticker{background:#dc2626;color:white;font-weight:600;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:52px;z-index:250;}
-.ticker-text{display:inline-block;padding-left:100%;animation:scrollNotice 15s linear infinite;}
+.ticker-text{display:inline-block;padding-left:100%;animation:scrollNotice 10s linear infinite;}
 @keyframes scrollNotice{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
 .headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;}
 .posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:8px;margin-top:10px;}
 .card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(2,6,23,0.06);cursor:pointer;transition:transform 0.2s;position:relative;}
 .card:hover{transform:scale(1.02);}
-.card-img{width:100%;height:200px;object-fit:cover;display:block;}
+.card-img{width:100%;height:auto;object-fit:contain;display:block;}
 .card-body{padding:8px;}
 .card-body h3{font-weight:700;font-size:18px;margin-bottom:4px;}
 .card-body p{font-size:14px;color:#555;margin-bottom:6px;}
@@ -232,25 +225,4 @@ header img{height:40px;width:auto;border-radius:6px;}
 <div class="headline-ticker"><span id="headlineText"></span></div>
 
 <section id="editorArea" class="editor hidden">
-  <h2>🖋️ Admin: Create/Edit News</h2>
-  <input id="aTitle" placeholder="Title">
-  <input id="aCat" placeholder="Category">
-  <div id="blocksList"></div>
-  <button id="addTextBtn">Add Text</button>
-  <button id="addImageBtn">Add Image</button>
-  <button id="publishBtn">Publish</button>
-</section>
-
-<section id="postsArea" class="posts-grid"></section>
-
-<section id="noticeEditor" class="editor hidden">
-  <h2>📰 Admin Notice</h2>
-  <input id="noticeInput" placeholder="Enter notice text...">
-  <button id="saveNoticeBtn">Save Notice</button>
-</section>
-
-<!-- Modal -->
-<div id="modalBg"><div id="modalContent"></div></div>
-
-</body>
-</html>
+  <h2>🖋️ Admin: Create/Edit
