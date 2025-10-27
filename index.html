@@ -42,11 +42,11 @@ const modalBg = document.getElementById("modalBg");
 const modalContent = document.getElementById("modalContent");
 
 // Login/Logout
-loginBtn.onclick = ()=>signInWithPopup(auth, provider).catch(e=>alert(e.message));
-logoutBtn.onclick = ()=>signOut(auth);
+loginBtn.onclick = () => signInWithPopup(auth, provider).catch(e => alert(e.message));
+logoutBtn.onclick = () => signOut(auth);
 
-onAuthStateChanged(auth,user=>{
-  if(user && user.email===ADMIN_EMAIL){
+onAuthStateChanged(auth, user => {
+  if(user && user.email === ADMIN_EMAIL){
     editorArea.classList.remove("hidden");
     noticeEditor.classList.remove("hidden");
     loginBtn.classList.add("hidden");
@@ -60,14 +60,14 @@ onAuthStateChanged(auth,user=>{
 });
 
 // Add blocks
-document.getElementById("addTextBtn").onclick = ()=>{
+document.getElementById("addTextBtn").onclick = () => {
   const t = document.createElement("textarea");
   t.placeholder = "Write paragraph...";
   t.dataset.type = "text";
   t.className = "border p-2 w-full mb-2 rounded";
   blocksList.appendChild(t);
 }
-document.getElementById("addImageBtn").onclick = ()=>{
+document.getElementById("addImageBtn").onclick = () => {
   const inp = document.createElement("input");
   inp.type = "file";
   inp.dataset.type = "image";
@@ -76,56 +76,56 @@ document.getElementById("addImageBtn").onclick = ()=>{
 }
 
 // Publish news
-document.getElementById("publishBtn").onclick = async()=>{
+document.getElementById("publishBtn").onclick = async() => {
   const title = aTitle.value.trim();
   const cat = aCat.value.trim();
   if(!title) return alert("Enter title!");
   const blocks = [];
   for(const el of blocksList.children){
-    if(el.dataset.type==="text" && el.value.trim()) blocks.push({type:"text",text:el.value.trim()});
-    else if(el.type==="file" && el.files.length>0){
+    if(el.dataset.type === "text" && el.value.trim()) blocks.push({type:"text", text:el.value.trim()});
+    else if(el.type === "file" && el.files.length > 0){
       const formData = new FormData();
-      formData.append("image",el.files[0]);
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=2387b6e1ec3474b6df29aaa462344077`,{method:"POST",body:formData});
+      formData.append("image", el.files[0]);
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=2387b6e1ec3474b6df29aaa462344077`, {method:"POST", body:formData});
       const data = await res.json();
-      if(data.data?.url) blocks.push({type:"image",url:data.data.url});
+      if(data.data?.url) blocks.push({type:"image", url:data.data.url});
     }
   }
-  if(blocks.length===0) return alert("Add content!");
-  await addDoc(collection(db,"news"),{title,category:cat,blocks,time:Date.now()});
-  aTitle.value=aCat.value=""; blocksList.innerHTML="";
+  if(blocks.length === 0) return alert("Add content!");
+  await addDoc(collection(db,"news"), {title, category:cat, blocks, time:Date.now()});
+  aTitle.value = aCat.value = ""; blocksList.innerHTML = "";
 }
 
 // Load posts
-onSnapshot(query(collection(db,"news"),orderBy("time","desc")),snap=>{
-  const posts = snap.docs.map(d=>({id:d.id,...d.data()}));
+onSnapshot(query(collection(db,"news"), orderBy("time","desc")), snap => {
+  const posts = snap.docs.map(d => ({id:d.id,...d.data()}));
   renderPosts(posts);
 });
 
 // Render posts
 function renderPosts(posts){
-  postsArea.innerHTML="";
-  posts.forEach(post=>{
-    const firstImg = post.blocks.find(b=>b.type==="image")?.url || "https://via.placeholder.com/300x200?text=No+Image";
-    const firstText = post.blocks.find(b=>b.type==="text")?.text.substring(0,80)+"..." || "";
+  postsArea.innerHTML = "";
+  posts.forEach(post => {
+    const firstImg = post.blocks.find(b => b.type==="image")?.url || "https://via.placeholder.com/300x200?text=No+Image";
+    const firstText = post.blocks.find(b => b.type==="text")?.text.substring(0,80)+"..." || "";
     const card = document.createElement("div");
     card.className="card";
     card.innerHTML = `<img src='${firstImg}' class='card-img'><div class='card-body'><h3>${post.title}</h3><p>${firstText}</p></div>`;
-    card.onclick = ()=>showModal(post);
+    card.onclick = () => showModal(post);
     postsArea.appendChild(card);
   });
-  headlineText.textContent=posts.slice(0,5).map(p=>p.title).join(" — ");
+  headlineText.textContent = posts.slice(0,5).map(p=>p.title).join(" — ");
 }
 
 // Modal
 function showModal(post){
   modalContent.innerHTML = `<h2 class='text-lg font-bold mb-2'>${post.title}</h2>`;
-  post.blocks.forEach(b=>{
+  post.blocks.forEach(b => {
     if(b.type==="text") modalContent.innerHTML += `<p class='mb-2 text-gray-800'>${b.text}</p>`;
     else modalContent.innerHTML += `<img src='${b.url}' class='w-full mb-2 object-contain'>`;
   });
 
-  onAuthStateChanged(auth,user=>{
+  onAuthStateChanged(auth, user => {
     if(user && user.email===ADMIN_EMAIL){
       const delBtn = document.createElement("button");
       delBtn.textContent="❌ Delete News";
@@ -142,29 +142,23 @@ function showModal(post){
 }
 
 // Close modal on background click
-modalBg.onclick = (e)=>{
-  if(e.target===modalBg) modalBg.style.display="none";
-}
+modalBg.onclick = (e) => { if(e.target === modalBg) modalBg.style.display="none"; }
 
 // Menu toggle
-function toggleMenu(){document.getElementById("menuList").classList.toggle("hidden");}
+function toggleMenu(){ document.getElementById("menuList").classList.toggle("hidden"); }
 
-// 🔹 Notice Save
+// Notice
 document.getElementById("saveNoticeBtn").onclick = async () => {
   const text = noticeInput.value.trim();
   if(!text) return alert("Enter notice text!");
-  try {
-    await setDoc(doc(db, "settings", "notice"), { text, time: Date.now() });
-    noticeInput.value = "";
-  } catch (e) {
-    alert("Error saving notice: " + e.message);
-  }
+  await setDoc(doc(db,"settings","notice"), {text, time:Date.now()});
+  noticeInput.value = "";
 };
 
-// 🔹 Notice Live Scroll
-const noticeRef = doc(db, "settings", "notice");
+// Live notice scroll
+const noticeRef = doc(db,"settings","notice");
 onSnapshot(noticeRef, snap => {
-  if (snap.exists()) {
+  if(snap.exists()){
     noticeText.textContent = snap.data().text;
     const ticker = document.querySelector(".ticker-text");
     ticker.style.animation = "none";
@@ -172,6 +166,7 @@ onSnapshot(noticeRef, snap => {
     ticker.style.animation = "scrollNotice 10s linear infinite";
   }
 });
+
 </script>
 
 <style>
@@ -185,9 +180,9 @@ header img{height:40px;width:auto;border-radius:6px;}
 @keyframes scrollNotice{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
 .headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;}
 .posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:8px;margin-top:10px;}
-.card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(2,6,23,0.06);cursor:pointer;transition:transform 0.2s;position:relative;}
+.card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(2,6,23,0.06);cursor:pointer;transition:transform 0.2s;}
 .card:hover{transform:scale(1.02);}
-.card-img{width:100%;height:auto;object-fit:contain;display:block;}
+.card-img{width:100%;height:auto;object-fit:contain;}
 .card-body{padding:8px;}
 .card-body h3{font-weight:700;font-size:18px;margin-bottom:4px;}
 .card-body p{font-size:14px;color:#555;margin-bottom:6px;}
@@ -225,4 +220,25 @@ header img{height:40px;width:auto;border-radius:6px;}
 <div class="headline-ticker"><span id="headlineText"></span></div>
 
 <section id="editorArea" class="editor hidden">
-  <h2>🖋️ Admin: Create/Edit
+  <h2>🖋️ Admin: Create/Edit News</h2>
+  <input id="aTitle" placeholder="Title">
+  <input id="aCat" placeholder="Category">
+  <div id="blocksList"></div>
+  <button id="addTextBtn">Add Text</button>
+  <button id="addImageBtn">Add Image</button>
+  <button id="publishBtn">Publish</button>
+</section>
+
+<section id="postsArea" class="posts-grid"></section>
+
+<section id="noticeEditor" class="editor hidden">
+  <h2>📰 Admin Notice</h2>
+  <input id="noticeInput" placeholder="Enter notice text...">
+  <button id="saveNoticeBtn">Save Notice</button>
+</section>
+
+<!-- Modal -->
+<div id="modalBg"><div id="modalContent"></div></div>
+
+</body>
+</html>
