@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story | Marathi Crime Files</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCLCUAiPz-sqhFDskG9g9AwyUI1RdTQWfk",
+  authDomain: "marathi-crime-files.firebaseapp.com",
+  projectId: "marathi-crime-files",
+  storageBucket: "marathi-crime-files.appspot.com",
+  messagingSenderId: "973325762370",
+  appId: "1:973325762370:web:4fb97306806bbe6cc0d2db"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const postsArea = document.getElementById("postsArea");
+
+onSnapshot(query(collection(db,"news"), orderBy("time","desc")), snap => {
+  const posts = snap.docs.map(d=>d.data()).filter(p=>p.category.toLowerCase()==="story");
+  postsArea.innerHTML = "";
+  posts.forEach(post=>{
+    const img = post.blocks.find(b=>b.type==="image")?.url || "https://via.placeholder.com/300x200?text=No+Image";
+    const text = post.blocks.find(b=>b.type==="text")?.text.substring(0,80)+"..." || "";
+    postsArea.innerHTML += `
+      <div class='bg-white rounded-lg shadow-md p-2 cursor-pointer'>
+        <img src='${img}' class='w-full h-40 object-cover rounded'>
+        <h3 class='font-bold mt-2'>${post.title}</h3>
+        <p class='text-sm text-gray-600'>${text}</p>
+      </div>`;
+  });
+});
+</script>
+<style>
+body{background:#f6f7fb;font-family:Arial;}
+header{background:#1e40af;color:white;padding:8px 12px;display:flex;justify-between;align-items:center;}
+</style>
+</head>
+<body>
+<header>
+  <h2 class="font-bold">📖 Story</h2>
+  <button onclick="window.location='index.html'" class="bg-white text-blue-800 px-3 py-1 rounded">🏠 Home</button>
+</header>
+
+<div id="postsArea" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-3"></div>
+</body>
+</html>
