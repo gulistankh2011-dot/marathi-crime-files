@@ -328,5 +328,65 @@ body{padding-bottom:50px;}
 <!-- Modal -->
 <div id="modalBg"><div id="modalContent"></div></div>
 
+
+
+<!-- Animated Footer Strip -->
+<footer class="fixed bottom-0 w-full flex justify-center items-center space-x-2 py-1 z-50 animated-footer">
+  <a href="about.html" class="footer-btn">About</a>
+  <a href="contact.html" class="footer-btn">Contact</a>
+  <a href="privacy.html" class="footer-btn">Privacy</a>
+  <a href="terms.html" class="footer-btn">T&C</a>
+</footer>
+
+<style>
+.animated-footer {
+  background: linear-gradient(135deg,#1f2937,#111827,#1f2937);
+  background-size: 400% 400%;
+  animation: gradientShift 8s ease infinite;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+@keyframes gradientShift {
+  0% {background-position:0% 50%;}
+  50% {background-position:100% 50%;}
+  100% {background-position:0% 50%;}
+}
+
+.footer-btn {
+  display: inline-block;
+  text-decoration: none;
+  color: white;
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.3), -1px -1px 3px rgba(255,255,255,0.05);
+  transition: all 0.2s ease-in-out;
+  text-align: center;
+}
+
+.footer-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 2px 4px 6px rgba(0,0,0,0.4), -2px -2px 6px rgba(255,255,255,0.1);
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  0% {transform: translateY(-2px) scale(1.05);}
+  100% {transform: translateY(-2px) scale(1.1);}
+}
+
+@media (max-width:640px){
+  .footer-btn {
+    font-size:9px;
+    padding:2px 4px;
+  }
+}
+</style>
+
+
+
+  
 </body>
 </html>
