@@ -89,8 +89,15 @@ function showModal(post){
   modalBg.style.display="flex";
 }
 
-// Menu toggle
-function toggleMenu(){document.getElementById("menuList").classList.toggle("hidden");}
+document.addEventListener("DOMContentLoaded", () => {
+  const menuBtn = document.querySelector(".nav-btn");
+  const menuList = document.getElementById("menuList");
+
+  menuBtn.addEventListener("click", () => {
+    menuList.classList.toggle("hidden");
+  });
+});
+
 
 // Notice
 document.getElementById("saveNoticeBtn").onclick=async()=>{const text=noticeInput.value.trim();if(!text)return alert("Enter notice text!");try{await setDoc(doc(db,"settings","notice"),{text,time:Date.now()});alert("Notice saved!");noticeInput.value="";}catch(e){alert("Error saving notice: "+e.message);}}
