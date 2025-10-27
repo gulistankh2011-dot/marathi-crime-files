@@ -1,55 +1,50 @@
-// category.js
-import { listBanners } from "./app.js";
-import { onAuth } from "./app.js";
-import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<!-- category.html -->
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Category | Marathi Crime Files</title>
+<link rel="stylesheet" href="style.css">
+<script type="module" defer src="category.js"></script>
+</head>
+<body>
 
-const params = new URLSearchParams(location.search);
-const category = params.get("cat") || "crime";
+<div id="bannerWrap" class="header-top-banner"></div>
 
-const bannerWrap = document.getElementById("bannerWrap");
-const postsEl = document.getElementById("posts");
-const breakingTick = document.getElementById("breakingTick");
-const noticeTick = document.getElementById("noticeTick");
-const loginBtn = document.getElementById("loginBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-const modal = document.getElementById("modal');
-const modalContent = document.getElementById("modalContent");
+<header class="header-bar">
+  <div style="display:flex;align-items:center;gap:10px">
+    <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="logo" class="logo-img">
+    <h1 id="pageTitle" style="margin:0;font-size:18px">Category</h1>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <nav class="menu">
+      <a href="index.html">Home</a>
+      <a href="crime.html">Crime</a>
+      <a href="lawarish.html">Lawarish</a>
+      <a href="gumshuda.html">Gumshuda</a>
+      <a href="story.html">Story</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <button id="loginBtn" class="auth-btn">Login</button>
+    <button id="logoutBtn" class="auth-btn" style="display:none;background:#ef4444;color:#fff">Logout</button>
+  </div>
+</header>
 
-// load banners
-async function initBanners(){
-  const banners = await listBanners().catch(()=>[]);
-  const urls = banners.length ? banners.map(b=>b.url) : [
-    "https://via.placeholder.com/1400x500?text=Banner+1",
-    "https://via.placeholder.com/1400x500?text=Banner+2"
-  ];
-  bannerWrap.innerHTML = urls.map((u,i)=>`<img src="${u}" style="display:${i===0?'block':'none'};width:100%;height:100%;object-fit:cover">`).join("");
-  // auto switch
-  let idx=0; setInterval(()=>{const imgs=bannerWrap.querySelectorAll("img"); idx=(idx+1)%imgs.length; imgs.forEach((im,i)=>im.style.display=i===idx?'block':'none')},4000);
-}
-initBanners();
+<div class="container ticker-wrap">
+  <div class="breaking"><span class="tick" id="breakingTick">Loading breaking...</span></div>
+  <div class="notice"><span class="tick" id="noticeTick">Loading notice...</span></div>
+</div>
 
-// load category news via onSnapshot and filter client-side
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-const db = getFirestore();
-const newsCol = collection(db,"news");
-onSnapshot(query(newsCol, orderBy("time","desc")), snap=>{
-  const list = snap.docs.map(d=>({id:d.id,...d.data()})).filter(p=> (p.category||"").toLowerCase()===category.toLowerCase());
-  postsEl.innerHTML = "";
-  list.forEach(item=>{
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `<img src="${item.blocks.find(b=>b.type==='image')?.url || 'https://via.placeholder.com/600x400?text=No+Image'}"><h3>${item.title}</h3><p>${item.blocks.find(b=>b.type==='text')?.text?.substring(0,120) || ''}</p>`;
-    card.onclick = ()=>openModal(item);
-    postsEl.appendChild(card);
-  });
-});
+<main class="container">
+  <h2 id="heading" style="margin-top:10px">Stories</h2>
+  <div id="posts" class="posts-grid"></div>
+  <div id="loader" class="loader">Loading more news...</div>
+</main>
 
-function openModal(item){
-  modalContent.innerHTML = `<h2>${item.title}</h2>`;
-  item.blocks.forEach(b=>{
-    if (b.type==='text') modalContent.innerHTML += `<p>${b.text}</p>`;
-    else if (b.type==='image') modalContent.innerHTML += `<img src="${b.url}" style="width:100%;margin:8px 0">`;
-  });
-  modal.style.display = "flex";
-}
-modal.onclick = (e)=> { if (e.target===modal) modal.style.display = "none"; }
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:20px">
+  <div id="modalContent" style="background:white;padding:14px;border-radius:8px;max-width:700px;max-height:90vh;overflow:auto"></div>
+</div>
+
+</body>
+</html>
