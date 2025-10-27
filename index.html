@@ -1,55 +1,244 @@
-<!-- index.html -->
 <!doctype html>
 <html lang="hi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Marathi Crime Files - Home</title>
-<link rel="stylesheet" href="style.css">
-<script type="module" defer src="home.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marathi Crime Files</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// Firebase setup
+const firebaseConfig = {
+  apiKey: "AIzaSyCLCUAiPz-sqhFDskG9g9AwyUI1RdTQWfk",
+  authDomain: "marathi-crime-files.firebaseapp.com",
+  projectId: "marathi-crime-files",
+  storageBucket: "marathi-crime-files.appspot.com",
+  messagingSenderId: "973325762370",
+  appId: "1:973325762370:web:4fb97306806bbe6cc0d2db"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+const ADMIN_EMAIL = "gulistankh2011@gmail.com";
+
+// DOM Elements
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const editorArea = document.getElementById("editorArea");
+const noticeEditor = document.getElementById("noticeEditor");
+const postsArea = document.getElementById("postsArea");
+const blocksList = document.getElementById("blocksList");
+const aTitle = document.getElementById("aTitle");
+const aCat = document.getElementById("aCat");
+const noticeInput = document.getElementById("noticeInput");
+const noticeText = document.getElementById("noticeText");
+const headlineText = document.getElementById("headlineText");
+const modalBg = document.getElementById("modalBg");
+const modalContent = document.getElementById("modalContent");
+
+// Login/Logout
+loginBtn.onclick = () => signInWithPopup(auth, provider).catch(e => alert(e.message));
+logoutBtn.onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, user => {
+  if(user && user.email === ADMIN_EMAIL){
+    editorArea.classList.remove("hidden");
+    noticeEditor.classList.remove("hidden");
+    loginBtn.classList.add("hidden");
+    logoutBtn.classList.remove("hidden");
+  } else {
+    editorArea.classList.add("hidden");
+    noticeEditor.classList.add("hidden");
+    loginBtn.classList.remove("hidden");
+    logoutBtn.classList.add("hidden");
+  }
+});
+
+// Add blocks
+document.getElementById("addTextBtn").onclick = () => {
+  const t = document.createElement("textarea");
+  t.placeholder = "Write paragraph...";
+  t.dataset.type = "text";
+  t.className = "border p-2 w-full mb-2 rounded";
+  blocksList.appendChild(t);
+}
+document.getElementById("addImageBtn").onclick = () => {
+  const inp = document.createElement("input");
+  inp.type = "file";
+  inp.dataset.type = "image";
+  inp.className = "w-full mb-2";
+  blocksList.appendChild(inp);
+}
+
+// Publish news
+document.getElementById("publishBtn").onclick = async() => {
+  const title = aTitle.value.trim();
+  const cat = aCat.value.trim();
+  if(!title) return alert("Enter title!");
+  const blocks = [];
+  for(const el of blocksList.children){
+    if(el.dataset.type === "text" && el.value.trim()) blocks.push({type:"text", text:el.value.trim()});
+    else if(el.type === "file" && el.files.length > 0){
+      const formData = new FormData();
+      formData.append("image", el.files[0]);
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=2387b6e1ec3474b6df29aaa462344077`, {method:"POST", body:formData});
+      const data = await res.json();
+      if(data.data?.url) blocks.push({type:"image", url:data.data.url});
+    }
+  }
+  if(blocks.length === 0) return alert("Add content!");
+  await addDoc(collection(db,"news"), {title, category:cat, blocks, time:Date.now()});
+  aTitle.value = aCat.value = ""; blocksList.innerHTML = "";
+}
+
+// Load posts
+onSnapshot(query(collection(db,"news"), orderBy("time","desc")), snap => {
+  const posts = snap.docs.map(d => ({id:d.id,...d.data()}));
+  renderPosts(posts);
+});
+
+// Render posts
+function renderPosts(posts){
+  postsArea.innerHTML = "";
+  posts.forEach(post => {
+    const firstImg = post.blocks.find(b => b.type==="image")?.url || "https://via.placeholder.com/300x200?text=No+Image";
+    const firstText = post.blocks.find(b => b.type==="text")?.text.substring(0,80)+"..." || "";
+    const card = document.createElement("div");
+    card.className="card";
+    card.innerHTML = `<img src='${firstImg}' class='card-img'><div class='card-body'><h3>${post.title}</h3><p>${firstText}</p></div>`;
+    card.onclick = () => showModal(post);
+    postsArea.appendChild(card);
+  });
+  headlineText.textContent = posts.slice(0,5).map(p=>p.title).join(" — ");
+}
+
+// Modal
+function showModal(post){
+  modalContent.innerHTML = `<h2 class='text-lg font-bold mb-2'>${post.title}</h2>`;
+  post.blocks.forEach(b => {
+    if(b.type==="text") modalContent.innerHTML += `<p class='mb-2 text-gray-800'>${b.text}</p>`;
+    else modalContent.innerHTML += `<img src='${b.url}' class='w-full mb-2 object-contain'>`;
+  });
+
+  onAuthStateChanged(auth, user => {
+    if(user && user.email===ADMIN_EMAIL){
+      const delBtn = document.createElement("button");
+      delBtn.textContent="❌ Delete News";
+      delBtn.className="bg-red-600 text-white p-2 rounded mt-2";
+      delBtn.onclick = async()=>{
+        if(confirm("Are you sure?")) await deleteDoc(doc(db,"news",post.id));
+        modalBg.style.display="none";
+      };
+      modalContent.appendChild(delBtn);
+    }
+  });
+
+  modalBg.style.display="flex";
+}
+
+// Close modal on background click
+modalBg.onclick = (e) => { if(e.target === modalBg) modalBg.style.display="none"; }
+
+// Menu toggle
+function toggleMenu(){ document.getElementById("menuList").classList.toggle("hidden"); }
+
+// Notice
+document.getElementById("saveNoticeBtn").onclick = async () => {
+  const text = noticeInput.value.trim();
+  if(!text) return alert("Enter notice text!");
+  await setDoc(doc(db,"settings","notice"), {text, time:Date.now()});
+  noticeInput.value = "";
+};
+
+// Live notice scroll
+const noticeRef = doc(db,"settings","notice");
+onSnapshot(noticeRef, snap => {
+  if(snap.exists()){
+    noticeText.textContent = snap.data().text;
+    const ticker = document.querySelector(".ticker-text");
+    ticker.style.animation = "none";
+    void ticker.offsetWidth;
+    ticker.style.animation = "scrollNotice 10s linear infinite";
+  }
+});
+
+</script>
+
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#f6f7fb;color:#0b2540;}
+header{display:flex;justify-between;align-items:center;padding:8px 12px;background:#1e40af;color:white;position:sticky;top:0;z-index:300;}
+header img{height:40px;width:auto;border-radius:6px;}
+.nav-btn,.auth-btn{padding:3px 6px;border-radius:6px;font-weight:600;cursor:pointer;transition:transform 0.2s;font-size:12px;}
+.nav-btn:hover,.auth-btn:hover{transform:scale(1.05);}
+.notice-ticker{background:#dc2626;color:white;font-weight:600;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;position:sticky;top:52px;z-index:250;}
+.ticker-text{display:inline-block;padding-left:100%;animation:scrollNotice 10s linear infinite;}
+@keyframes scrollNotice{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
+.headline-ticker{background:#2563eb;color:white;font-weight:500;font-size:13px;padding:4px 10px;overflow:hidden;white-space:nowrap;}
+.posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;padding:8px;margin-top:10px;}
+.card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(2,6,23,0.06);cursor:pointer;transition:transform 0.2s;}
+.card:hover{transform:scale(1.02);}
+.card-img{width:100%;height:auto;object-fit:contain;}
+.card-body{padding:8px;}
+.card-body h3{font-weight:700;font-size:18px;margin-bottom:4px;}
+.card-body p{font-size:14px;color:#555;margin-bottom:6px;}
+.editor{padding:12px;background:#fff;margin:6px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+.editor input,.editor textarea{border:1px solid #ccc;border-radius:6px;padding:6px;margin-bottom:6px;width:100%;}
+.editor button{padding:6px 12px;margin-right:6px;border-radius:6px;background:#1e40af;color:white;cursor:pointer;}
+#modalBg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:1000;}
+#modalContent{background:#fff;padding:12px;border-radius:8px;max-height:90vh;overflow-y:auto;width:90%;max-width:600px;}
+</style>
+
 </head>
 <body>
 
-<!-- Top banner (slider) -->
-<div id="bannerWrap" class="header-top-banner"><div id="bannerDots" class="banner-dots"></div></div>
-
-<!-- Header bar -->
-<header class="header-bar">
-  <div style="display:flex;align-items:center;gap:10px">
-    <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="logo" class="logo-img">
-    <h1 style="margin:0;font-size:18px">Marathi Crime Files</h1>
+<header class="flex justify-between items-center">
+  <div class="flex items-center space-x-2">
+    <img src="https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg" alt="Logo">
+    <h1 class="font-bold text-base sm:text-lg">Marathi Crime Files</h1>
   </div>
-
-  <div style="display:flex;align-items:center;gap:12px">
-    <nav class="menu">
-      <a href="index.html">Home</a>
-      <a href="crime.html">Crime</a>
-      <a href="lawarish.html">Lawarish</a>
-      <a href="gumshuda.html">Gumshuda</a>
-      <a href="story.html">Story</a>
-      <a href="contact.html">Contact</a>
-    </nav>
-    <button id="loginBtn" class="auth-btn">Login</button>
-    <button id="logoutBtn" class="auth-btn" style="display:none;background:#ef4444;color:#fff">Logout</button>
+  <div class="relative">
+    <button onclick="toggleMenu()" class="nav-btn">☰ Menu</button>
+    <div id="menuList" class="hidden absolute right-0 mt-1 bg-white text-blue-900 rounded-md shadow-lg overflow-hidden z-[10000]">
+      <button class="dropdown-btn">Story</button>
+      <button class="dropdown-btn">Gumshuda</button>
+      <button class="dropdown-btn">Lawarish</button>
+      <button class="dropdown-btn">Crime</button>
+    </div>
+  </div>
+  <div class="flex space-x-1">
+    <button id="loginBtn" class="auth-btn bg-green-500 text-white">Login</button>
+    <button id="logoutBtn" class="auth-btn bg-red-600 text-white hidden">Logout</button>
   </div>
 </header>
 
-<!-- tickers -->
-<div class="container ticker-wrap">
-  <div class="breaking"><span class="tick" id="breakingTick">Loading breaking...</span></div>
-  <div class="notice"><span class="tick" id="noticeTick">Loading notice...</span></div>
-</div>
+<div class="notice-ticker"><span class="ticker-text" id="noticeText"></span></div>
+<div class="headline-ticker"><span id="headlineText"></span></div>
 
-<!-- main feed -->
-<main class="container">
-  <div id="posts" class="posts-grid"></div>
-  <div id="loader" class="loader">Loading more news...</div>
-</main>
+<section id="editorArea" class="editor hidden">
+  <h2>🖋️ Admin: Create/Edit News</h2>
+  <input id="aTitle" placeholder="Title">
+  <input id="aCat" placeholder="Category">
+  <div id="blocksList"></div>
+  <button id="addTextBtn">Add Text</button>
+  <button id="addImageBtn">Add Image</button>
+  <button id="publishBtn">Publish</button>
+</section>
 
-<!-- Modal for full post -->
-<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:20px">
-  <div id="modalContent" style="background:white;padding:14px;border-radius:8px;max-width:700px;max-height:90vh;overflow:auto"></div>
-</div>
+<section id="postsArea" class="posts-grid"></section>
+
+<section id="noticeEditor" class="editor hidden">
+  <h2>📰 Admin Notice</h2>
+  <input id="noticeInput" placeholder="Enter notice text...">
+  <button id="saveNoticeBtn">Save Notice</button>
+</section>
+
+<!-- Modal -->
+<div id="modalBg"><div id="modalContent"></div></div>
 
 </body>
 </html>
