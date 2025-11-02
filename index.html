@@ -316,7 +316,6 @@ body{padding-bottom:50px;}
 
 
 
-
 <!-- Carousel -->
 <section id="carouselEditor" class="editor hidden mb-4">
   <h2>📸 Admin: Upload Carousel Images</h2>
@@ -380,30 +379,29 @@ body{padding-bottom:50px;}
 </footer>
 
 <script>
-// Service Worker Registration
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/service-worker.js')
-    .then(() => console.log('SW Registered'))
-    .catch(console.error);
-}
+  // Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(() => console.log('SW Registered'))
+      .catch(console.error);
+  }
 
-// PWA Install Prompt
-let deferredPrompt;
+  // Install Prompt
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('installBtn').style.display = 'inline-block';
+  });
 
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  document.getElementById('installBtn').style.display = 'inline-block';
-});
-
-document.getElementById('installBtn').addEventListener('click', async () => {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  console.log('User response to install:', outcome);
-  deferredPrompt = null;
-  document.getElementById('installBtn').style.display = 'none';
-});
+  document.getElementById('installBtn').addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('User response to install:', outcome);
+    deferredPrompt = null;
+    document.getElementById('installBtn').style.display = 'none';
+  });
 </script>
 
 
