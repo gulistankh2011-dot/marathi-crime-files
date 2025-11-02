@@ -166,25 +166,23 @@ function showModal(post) {
 
 
 
-
-  // Share button for everyone
-  const shareBtn = document.createElement("button");
-  shareBtn.textContent = "📤 Share News";
-  shareBtn.className = "bg-blue-600 text-white p-2 rounded mt-2 mr-2";
-  shareBtn.onclick = () => {
-    const shareData = {
-      title: post.title,
-      text: "मराठी क्राइम फाईल्स वरची बातमी पहा 👇",
-      url: window.location.href + `#${post.id}`,
-    };
-
-    if (navigator.share) {
-      navigator.share(shareData).catch(err => console.log("Share canceled", err));
-    } else {
-      alert("Sharing not supported on this device.");
-    }
+const shareBtn = document.createElement("button");
+shareBtn.textContent = "📤 शेयर करें";
+shareBtn.className = "bg-blue-600 text-white p-2 rounded mt-2 mr-2";
+shareBtn.onclick = () => {
+  const shareData = {
+    title: post.title,
+    text: "मराठी क्राइम फाईल्सवरील ही बातमी पाहा 👇",
+    url: `${window.location.origin}/news.html?id=${post.id}`,
   };
-  modalContent.appendChild(shareBtn);
+
+  if (navigator.share) {
+    navigator.share(shareData).catch(err => console.log("Share canceled", err));
+  } else {
+    alert("Copy this link:\n" + shareData.url);
+  }
+};
+modalContent.appendChild(shareBtn);
 
 
 
