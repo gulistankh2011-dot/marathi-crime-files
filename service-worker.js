@@ -2,8 +2,13 @@ const CACHE_NAME = "marathi-crime-cache-v1";
 const urlsToCache = [
   "/",
   "/index.html",
+  "/crime.html",
+  "/gumshuda.html",
+  "/lawarish.html",
+  "/story.html",
   "/manifest.json",
-  "/favicon.ico",
+  "/192.png",
+  "/512.png"
 ];
 
 self.addEventListener("install", (event) => {
