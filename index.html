@@ -425,36 +425,14 @@ body{padding-bottom:50px;}
   }
 }
 </style>
-
 <script>
-  let deferredPrompt;
-  const installBtn = document.getElementById('installBtn');
-
-  // जब "install" prompt ready हो
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    installBtn.style.display = 'inline-block'; // बटन दिखाओ
-  });
-
-  // बटन क्लिक करने पर install prompt दिखाओ
-  installBtn.addEventListener('click', async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        console.log('App installed');
-      }
-      deferredPrompt = null;
-      installBtn.style.display = 'none'; // इंस्टॉल होने पर बटन छिपाओ
-    }
-  });
-
-  // अगर पहले से इंस्टॉल है तो बटन छिपाओ
-  window.addEventListener('appinstalled', () => {
-    installBtn.style.display = 'none';
-  });
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js')
+  .then(() => console.log('SW registered'))
+  .catch(console.error);
+}
 </script>
+
 
 
 </body>
