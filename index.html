@@ -6,6 +6,7 @@
 <title>मराठी क्राइम फाईल्स</title>
 
 
+
   <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1e40af">
 
@@ -307,6 +308,14 @@ body{padding-bottom:50px;}
 </head>
 <body>
 
+<div style="text-align:center; margin:8px 0;">
+  <button id="installBtn" style="display:none; padding:8px 16px; background:#1e40af; color:white; border:none; border-radius:8px; cursor:pointer;">
+    📲 ऐप इंस्टॉल करें
+  </button>
+</div>
+
+
+
 <!-- Carousel -->
 <section id="carouselEditor" class="editor hidden mb-4">
   <h2>📸 Admin: Upload Carousel Images</h2>
@@ -417,19 +426,35 @@ body{padding-bottom:50px;}
 </style>
 
 <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/service-worker.js')
-  .then(() => console.log("✅ Service Worker Registered"))
-  .catch(err => console.log("SW Failed", err));
-}
+  let deferredPrompt;
+  const installBtn = document.getElementById('installBtn');
+
+  // जब "install" prompt ready हो
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'inline-block'; // बटन दिखाओ
+  });
+
+  // बटन क्लिक करने पर install prompt दिखाओ
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('App installed');
+      }
+      deferredPrompt = null;
+      installBtn.style.display = 'none'; // इंस्टॉल होने पर बटन छिपाओ
+    }
+  });
+
+  // अगर पहले से इंस्टॉल है तो बटन छिपाओ
+  window.addEventListener('appinstalled', () => {
+    installBtn.style.display = 'none';
+  });
 </script>
 
-
-  <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js");
-  }
-</script>
 
 </body>
 </html>
