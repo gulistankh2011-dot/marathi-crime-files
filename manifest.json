@@ -1,0 +1,21 @@
+{
+  "name": "मराठी क्राइम फाईल्स",
+  "short_name": "Crime Files",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1e40af",
+  "theme_color": "#1e40af",
+  "description": "मराठी क्राइम फाईल्स - क्राइम न्यूज, कहानियाँ और अपडेट्स",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://i.postimg.cc/6Q5TYPVR/Whats-App-Image-2025-10-26-at-2-42-16-PM.jpg",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
