@@ -1,7 +1,3 @@
-self.addEventListener('install', e => {
-  console.log('Service Worker installed');
-});
-self.addEventListener('activate', e => {
-  console.log('Service Worker activated');
-});
+self.addEventListener('install', e => console.log('SW installed'));
+self.addEventListener('activate', e => console.log('SW activated'));
 self.addEventListener('fetch', e => {});
