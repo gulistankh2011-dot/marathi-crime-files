@@ -1,7 +1,7 @@
 {
   "name": "मराठी क्राइम फाईल्स",
   "short_name": "Crime Files",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1e40af",
