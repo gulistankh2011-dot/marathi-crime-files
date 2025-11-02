@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title id="newsTitle">मराठी क्राइम फाईल्स</title>
+
+<!-- Default OG tags -->
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Loading..." id="ogTitle" />
+<meta property="og:description" content="Loading..." id="ogDesc" />
+<meta property="og:image" content="https://via.placeholder.com/600x400?text=Loading" id="ogImage" />
+<meta property="og:url" content="" id="ogUrl" />
+<meta property="og:site_name" content="मराठी क्राइम फाईल्स" />
+
+<meta name="twitter:card" content="summary_large_image" />
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyCLCUAiPz-sqhFDskG9g9AwyUI1RdTQWfk",
+  authDomain: "marathi-crime-files.firebaseapp.com",
+  projectId: "marathi-crime-files",
+  storageBucket: "marathi-crime-files.appspot.com",
+  messagingSenderId: "973325762370",
+  appId: "1:973325762370:web:4fb97306806bbe6cc0d2db"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Get newsId from URL
+const params = new URLSearchParams(window.location.search);
+const newsId = params.get('id');
+
+if(newsId){
+  const newsRef = doc(db, "news", newsId);
+  getDoc(newsRef).then(snap => {
+    if(snap.exists()){
+      const data = snap.data();
+      const firstImg = data.blocks.find(b => b.type === "image")?.url || "https://via.placeholder.com/600x400?text=No+Image";
+      const firstText = data.blocks.find(b => b.type === "text")?.text?.substring(0, 150) || "";
+
+      // Set OG tags dynamically
+      document.getElementById("ogTitle").setAttribute("content", data.title);
+      document.getElementById("ogDesc").setAttribute("content", firstText);
+      document.getElementById("ogImage").setAttribute("content", firstImg);
+      document.getElementById("ogUrl").setAttribute("content", window.location.href);
+      document.getElementById("newsTitle").innerText = data.title;
+    } else {
+      console.log("News not found");
+    }
+  });
+}
+</script>
+</head>
+<body>
+<h1>Loading news...</h1>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// Firebase init same as above
+</script>
+</body>
+</html>
