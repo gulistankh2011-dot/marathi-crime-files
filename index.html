@@ -166,31 +166,26 @@ function showModal(post) {
 
 
 
-const shareBtn = document.createElement("button");
-shareBtn.textContent = "📤 शेयर करें";
-shareBtn.className = "bg-blue-600 text-white p-2 rounded mt-2 mr-2";
-
 shareBtn.onclick = () => {
   const shareUrl = `${window.location.origin}/news.html?id=${post.id}`;
-  
+  const shareText = `📰 ${post.title}\n\nमराठी क्राइम फाईल्सवरील ही बातमी पाहा 👇\n${shareUrl}`;
+
+  // WhatsApp direct share
+  const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+
+  // agar native share supported hai to use karo
   if (navigator.share) {
-    // Mobile browsers का native share
     navigator.share({
       title: post.title,
-      text: "मराठी क्राइम फाईल्सवरील ही बातमी पाहा 👇",
+      text: shareText,
       url: shareUrl,
     }).catch(err => console.log("Share canceled", err));
   } else {
-    // Desktop या unsupported browser
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      alert("Link copied! तुम्ही आता याला manually share करू शकता:\n" + shareUrl);
-    }).catch(() => {
-      prompt("Copy this link manually:", shareUrl);
-    });
+    // WhatsApp par redirect
+    window.open(whatsappUrl, '_blank');
   }
 };
 
-modalContent.appendChild(shareBtn);
 
 
   
